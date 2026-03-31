@@ -29,7 +29,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
         <h2 className="text-lg font-bold tracking-tight" style={{ color: '#E6E6E6' }}>hackTime</h2>
-        <div className="w-8" /> {/* Spacer */}
+        <Link href="/profile" className="flex items-center gap-2 min-w-0 max-w-[44vw]">
+          <span className="truncate text-[10px] font-mono uppercase" style={{ color: '#CFFF04' }}>
+            {session?.user?.name || 'ADMIN'}
+          </span>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)' }}>
+            {session?.user?.image ? (
+              <img src={session.user.image} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <User size={16} style={{ color: '#E6E6E6' }} />
+            )}
+          </div>
+        </Link>
       </header>
 
       {/* Sidebar - Responsive logic handled within Sidebar or here */}
