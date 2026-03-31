@@ -15,7 +15,10 @@ function FlowForm() {
   const [isDeploying, setIsDeploying] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(!!editId);
+  const [showExtendedPalette, setShowExtendedPalette] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [generatedRoom, setGeneratedRoom] = useState<{ id: string, secret: string } | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -25,7 +28,7 @@ function FlowForm() {
     eventStartTime: '',
     eventEndTime: '',
     timezone: '',
-    accentColor: '#0070F3',
+    accentColor: '#FF2E9A',
     logoUrl: '',
     themeMode: 'noir',
     glassIntensity: 20,
@@ -142,6 +145,25 @@ function FlowForm() {
   };
 
   const handleAction = async (isDraft = false) => {
+    // 1. CLEAR PREVIOUS ERRORS
+    setValidationErrors([]);
+    const errors: string[] = [];
+
+    // 2. VALIDATE MANDATORY FIELDS (ONLY FOR LIVE LAUNCH)
+    if (!isDraft) {
+      if (!formData.name.trim()) errors.push("Hackathon Name is required.");
+      if (!formData.eventStartTime) errors.push("Event Start Time is required.");
+      if (!formData.eventEndTime) errors.push("Event End Time is required.");
+      if (!formData.timezone) errors.push("Event Timezone is required.");
+      if (phases.length === 0) errors.push("At least one phase is required.");
+      if (totalPhaseMinutes <= 0) errors.push("Phases must have duration.");
+    }
+
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
     if (isDraft) setIsSavingDraft(true);
     else setIsDeploying(true);
 
@@ -182,10 +204,10 @@ function FlowForm() {
           setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
         }
       } else {
-        alert(`Failed: ${data.error}`);
+        setValidationErrors([`Server Error: ${data.error}`]);
       }
     } catch (error: any) {
-      alert(`System Error: ${error.message}`);
+      setValidationErrors([`System Error: ${error.message}`]);
     } finally {
       setIsDeploying(false);
       setIsSavingDraft(false);
@@ -221,6 +243,16 @@ function FlowForm() {
 
   return (
     <div className="max-w-7xl mx-auto pb-24 stagger-in">
+      <style jsx global>{`
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type="number"] {
+          -moz-appearance: textfield;
+        }
+      `}</style>
       {/* Top Navigation */}
       {/* <div className="mb-12 flex items-center justify-between">
         <Link href="/dashboard" className="group flex items-center gap-2 text-slate-500 hover:text-white transition-all">
@@ -390,7 +422,7 @@ function FlowForm() {
                       </div>
 
                       <div className="space-y-1">
-                        <p className="text-[9px] font-bold tracking-widest uppercase text-center md:text-left" style={{ color: '#6B7280' }}>Auto-Next</p>
+                        <p className="text-[9px] font-bold tracking-widest uppercase text-center md:text-left" style={{ color: '#6B7280' }}>Auto-Skip</p>
                         <button 
                           onClick={() => setPhases(phases.map(p => p.id === phase.id ? { ...p, autoTransition: !p.autoTransition } : p))} 
                           className="w-12 h-6 rounded-full relative transition-all duration-300"
@@ -427,6 +459,24 @@ function FlowForm() {
 
         {/* Sidebar Summary */}
         <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-12 h-fit">
+          {/* Validation Errors Display */}
+          {validationErrors.length > 0 && (
+            <div className="rounded-[20px] p-6 bg-red-500/10 border border-red-500/20 space-y-3 animate-in fade-in slide-in-from-top-4">
+               <div className="flex items-center gap-2 text-red-400">
+                  <AlertTriangle size={16} />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">Incomplete Flow</p>
+               </div>
+               <ul className="space-y-1">
+                  {validationErrors.map((err, i) => (
+                    <li key={i} className="text-[11px] font-medium text-red-200/70 flex items-start gap-2">
+                       <span className="mt-1.5 w-1 h-1 rounded-full bg-red-400 shrink-0"></span>
+                       {err}
+                    </li>
+                  ))}
+               </ul>
+            </div>
+          )}
+
           <section className="rounded-[20px] p-8 shadow-2xl space-y-8 overflow-hidden relative" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)' }}>
             <h2 className="text-xs font-bold tracking-[0.2em] uppercase flex items-center gap-2" style={{ color: '#A0A0A0' }}>
                <Activity size={16} style={{ color: '#FF2E9A' }} /> Hackathon Pulse
@@ -508,15 +558,15 @@ function FlowForm() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold truncate" style={{ color: '#E6E6E6' }}>
-                        {formData.logoUrl ? 'Logo uploaded' : 'Upload event logo'}
+                      <p className="text-xs font-bold truncate uppercase tracking-wider" style={{ color: '#E6E6E6' }}>
+                        Logo
                       </p>
                       <p className="text-[9px] font-medium mt-0.5" style={{ color: '#6B7280' }}>
-                        {formData.logoUrl ? 'Click to replace • Max 1MB' : 'PNG, JPG, SVG • Max 1MB'}
+                        {formData.logoUrl ? 'Ready to ship • Max 1MB' : 'PNG, JPG, SVG • Max 1MB'}
                       </p>
                     </div>
-                    <div className="text-[8px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md shrink-0 transition-colors" style={{ backgroundColor: 'rgba(255,46,154,0.06)', color: '#FF2E9A' }}>
-                      {formData.logoUrl ? 'Replace' : 'Upload'}
+                    <div className="text-[8px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg shrink-0 transition-all group-hover:bg-[#FF2E9A] group-hover:text-white" style={{ backgroundColor: 'rgba(255,46,154,0.08)', color: '#FF2E9A', border: '1px solid rgba(255,46,154,0.1)' }}>
+                      Add
                     </div>
                   </div>
 
@@ -556,57 +606,68 @@ function FlowForm() {
 
                     {/* Preset Palettes */}
                     <div className="space-y-3">
-                      <div>
-                        <p className="text-[8px] font-bold uppercase tracking-widest mb-2" style={{ color: '#6B7280' }}>hackTime Brand</p>
-                        <div className="flex gap-2">
-                          {[
-                            { color: '#FF2E9A', name: 'Fuchsia' },
-                            { color: '#5D00FF', name: 'Indigo' },
-                            { color: '#CFFF04', name: 'Lime' },
-                          ].map(c => (
-                            <button
-                              key={c.color}
-                              onClick={() => setFormData({ ...formData, accentColor: c.color })}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-wider transition-all hover:scale-105"
-                              style={{ 
-                                backgroundColor: formData.accentColor === c.color ? `${c.color}15` : 'rgba(255,255,255,0.02)',
-                                border: `1px solid ${formData.accentColor === c.color ? `${c.color}40` : 'rgba(255,255,255,0.04)'}`,
-                                color: formData.accentColor === c.color ? c.color : '#6B7280'
-                              }}
-                            >
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }}></div>
-                              {c.name}
-                            </button>
-                          ))}
-                        </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>hackTime Brand</p>
+                        <button 
+                          onClick={() => setShowExtendedPalette(!showExtendedPalette)}
+                          className="w-5 h-5 rounded-full flex items-center justify-center transition-all hover:bg-white/5"
+                          style={{ color: showExtendedPalette ? '#FF2E9A' : '#6B7280' }}
+                        >
+                          <Plus size={12} className={`transition-transform duration-300 ${showExtendedPalette ? 'rotate-45' : ''}`} />
+                        </button>
                       </div>
-                      <div>
-                        <p className="text-[8px] font-bold uppercase tracking-widest mb-2" style={{ color: '#6B7280' }}>Extended Palette</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {[
-                            { color: '#10B981', name: 'Emerald' },
-                            { color: '#3B82F6', name: 'Sky' },
-                            { color: '#F43F5E', name: 'Rose' },
-                            { color: '#8B5CF6', name: 'Violet' },
-                            { color: '#F59E0B', name: 'Amber' },
-                            { color: '#06B6D4', name: 'Cyan' },
-                          ].map(c => (
-                            <button
-                              key={c.color}
-                              onClick={() => setFormData({ ...formData, accentColor: c.color })}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-wider transition-all hover:scale-105"
-                              style={{ 
-                                backgroundColor: formData.accentColor === c.color ? `${c.color}15` : 'rgba(255,255,255,0.02)',
-                                border: `1px solid ${formData.accentColor === c.color ? `${c.color}40` : 'rgba(255,255,255,0.04)'}`,
-                                color: formData.accentColor === c.color ? c.color : '#6B7280'
-                              }}
-                            >
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }}></div>
-                              {c.name}
-                            </button>
-                          ))}
-                        </div>
+                      
+                      <div className="flex gap-2">
+                        {[
+                          { color: '#FF2E9A', name: 'Fuchsia' },
+                          { color: '#5D00FF', name: 'Indigo' },
+                          { color: '#CFFF04', name: 'Lime' },
+                        ].map(c => (
+                          <button
+                            key={c.color}
+                            onClick={() => setFormData({ ...formData, accentColor: c.color })}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-wider transition-all hover:scale-105"
+                            style={{ 
+                              backgroundColor: formData.accentColor === c.color ? `${c.color}15` : 'rgba(255,255,255,0.02)',
+                              border: `1px solid ${formData.accentColor === c.color ? `${c.color}40` : 'rgba(255,255,255,0.04)'}`,
+                              color: formData.accentColor === c.color ? c.color : '#6B7280'
+                            }}
+                          >
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }}></div>
+                            {c.name}
+                          </button>
+                        ))}
                       </div>
+
+                      {showExtendedPalette && (
+                        <div className="pt-2 animate-in fade-in slide-in-from-top-2">
+                          <p className="text-[8px] font-bold uppercase tracking-widest mb-2" style={{ color: '#6B7280' }}>Extended Palette</p>
+                          <div className="flex gap-2 flex-wrap">
+                            {[
+                              { color: '#10B981', name: 'Emerald' },
+                              { color: '#3B82F6', name: 'Sky' },
+                              { color: '#F43F5E', name: 'Rose' },
+                              { color: '#8B5CF6', name: 'Violet' },
+                              { color: '#F59E0B', name: 'Amber' },
+                              { color: '#06B6D4', name: 'Cyan' },
+                            ].map(c => (
+                              <button
+                                key={c.color}
+                                onClick={() => setFormData({ ...formData, accentColor: c.color })}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-wider transition-all hover:scale-105"
+                                style={{ 
+                                  backgroundColor: formData.accentColor === c.color ? `${c.color}15` : 'rgba(255,255,255,0.02)',
+                                  border: `1px solid ${formData.accentColor === c.color ? `${c.color}40` : 'rgba(255,255,255,0.04)'}`,
+                                  color: formData.accentColor === c.color ? c.color : '#6B7280'
+                                }}
+                              >
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }}></div>
+                                {c.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Live Preview Bar */}
@@ -658,8 +719,16 @@ function FlowForm() {
                     <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-center" style={{ color: '#6B7280' }}>Room ID</p>
                     <div className="rounded-[20px] px-6 py-4 flex justify-between items-center group" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
                        <span className="text-xl font-mono font-bold tracking-widest" style={{ color: '#CFFF04' }}>{generatedRoom.id}</span>
-                       <button onClick={() => navigator.clipboard.writeText(generatedRoom.id)} className="p-2 transition-all hover:text-white" style={{ color: '#6B7280' }}>
-                          <Copy size={16} />
+                       <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedRoom.id);
+                          setIsCopied(true);
+                          setTimeout(() => setIsCopied(false), 2000);
+                        }} 
+                        className="p-2 transition-all" 
+                        style={{ color: isCopied ? '#10B981' : '#6B7280' }}
+                       >
+                          {isCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
                        </button>
                     </div>
                   </div>

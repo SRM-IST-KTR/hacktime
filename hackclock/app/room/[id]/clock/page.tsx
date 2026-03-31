@@ -252,83 +252,78 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
               </span>
             </div>
 
-            {/* TIMER — Must be the largest element on screen (brand §7.1) */}
+            {/* TIMER — Largest visual element per brand guidelines */}
             <div
-              className="my-6 md:my-10 flex items-center justify-center gap-1 sm:gap-2 text-center font-mono font-black leading-none select-none"
-              style={{ color: '#E6E6E6', textShadow: `0 0 60px ${accent}30` }}
+              className="my-6 md:my-10 flex items-center justify-center gap-1 sm:gap-2 text-center font-mono font-black tracking-tighter leading-none select-none z-10"
+              style={{ color: '#E6E6E6', textShadow: `0 0 80px ${accent}30` }}
             >
-              <span className="text-[clamp(2.8rem,16vw,10rem)] tracking-tight">{formatTime(timeLeft.hours)}</span>
-              <span className="text-[clamp(2rem,10vw,7rem)]" style={{ color: '#6B7280' }}>:</span>
-              <span className="text-[clamp(2.8rem,16vw,10rem)] tracking-tight">{formatTime(timeLeft.minutes)}</span>
-              <span className="text-[clamp(2rem,10vw,7rem)]" style={{ color: '#6B7280' }}>:</span>
-              <span className="text-[clamp(2.8rem,16vw,10rem)] tracking-tight">{formatTime(timeLeft.seconds)}</span>
+              <span className="text-[clamp(2.8rem,16vw,10rem)]">{formatTime(timeLeft.hours)}</span>
+              <span className="text-[clamp(2rem,10vw,7rem)] drop-shadow-none mx-1 md:mx-2" style={{ color: '#6B7280' }}>:</span>
+              <span className="text-[clamp(2.8rem,16vw,10rem)]">{formatTime(timeLeft.minutes)}</span>
+              <span className="text-[clamp(2rem,10vw,7rem)] drop-shadow-none mx-1 md:mx-2" style={{ color: '#6B7280' }}>:</span>
+              <span className="text-[clamp(2.8rem,16vw,10rem)]">{formatTime(timeLeft.seconds)}</span>
             </div>
 
             <div className="flex flex-col items-center gap-2">
               <p className="text-[11px] md:text-sm font-bold tracking-[0.4em] uppercase group-hover:text-[#E6E6E6] transition-colors" style={{ color: '#A0A0A0' }}>
                 {currentPhase.name || "Station Standby"}
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <div className="w-12 h-0.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}>
-                  <div className="h-full animate-pulse" style={{ width: '60%', backgroundColor: accent }}></div>
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* Event Flow Section */}
-          <div className="space-y-8">
-            <div className="flex justify-between items-center px-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl" style={{ backgroundColor: 'rgba(255,46,154,0.06)', color: '#FF2E9A' }}>
-                  <Activity size={18} />
-                </div>
-                <h3 className="text-sm font-bold tracking-[0.2em] uppercase" style={{ color: '#E6E6E6' }}>Event Flow</h3>
-              </div>
+          {/* Experience Flow — Card Based Layout per Screenshot */}
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <div className="flex items-center gap-3 px-2">
+              <h3 className="text-xl font-bold tracking-tight" style={{ color: '#E6E6E6' }}>Hackathon Flow</h3>
             </div>
 
-            <div className="relative">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-in">
-                {eventData.phases.map((phase: Phase, index: number) => {
-                  if (index < eventData.currentPhaseIndex) return null; 
-                  const isCurrent = index === eventData.currentPhaseIndex;
-                  return (
-                    <div 
-                      key={index} 
-                      className="rounded-[20px] p-6 transition-all ht-card-hover group"
-                      style={{ 
-                        backgroundColor: isCurrent ? 'rgba(255,46,154,0.03)' : '#1C1C1C',
-                        border: `1px solid ${isCurrent ? 'rgba(255,46,154,0.15)' : 'rgba(255,255,255,0.06)'}`
-                      }}
-                    >
-                       <div className="flex justify-between items-start mb-4">
-                          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>
-                            Phase {String(index + 1).padStart(2, '0')}
-                          </span>
-                          {isCurrent && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(16,185,129,0.08)' }}>
-                              <div className="w-1 h-1 rounded-full animate-pulse" style={{ backgroundColor: '#10B981' }}></div>
-                              <span className="text-[8px] font-bold uppercase" style={{ color: '#10B981' }}>Active</span>
-                            </div>
-                          )}
-                       </div>
-                       <h4 className="text-xl font-bold mb-2 transition-colors" style={{ color: isCurrent ? '#E6E6E6' : '#A0A0A0' }}>
-                         {phase.name}
-                       </h4>
-                       <div className="flex items-center gap-2 font-mono text-xs" style={{ color: '#6B7280' }}>
-                          <ClockIcon size={12} style={{ color: 'rgba(255,46,154,0.5)' }} />
-                          <span>{phase.durationMinutes} Minutes</span>
-                       </div>
-                       
-                       {isCurrent && (
-                         <div className="mt-6 w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
-                            <div className="h-full w-1/3" style={{ backgroundColor: '#FF2E9A' }}></div>
-                         </div>
-                       )}
+            <div className="flex flex-wrap gap-6">
+              {eventData.phases.map((phase: Phase, index: number) => {
+                const isPast = index < eventData.currentPhaseIndex;
+                const isCurrent = index === eventData.currentPhaseIndex;
+                const isNext = index === eventData.currentPhaseIndex + 1;
+                
+                return (
+                  <div 
+                    key={index} 
+                    className={`flex-1 min-w-[280px] rounded-[24px] p-8 transition-all duration-500 relative overflow-hidden ${isPast ? 'opacity-30 grayscale' : 'opacity-100'}`}
+                    style={{ 
+                      backgroundColor: '#1C1C1C',
+                      border: isCurrent 
+                        ? `1.5px solid ${accent}` 
+                        : '1.5px solid rgba(255,255,255,0.06)',
+                      boxShadow: isCurrent ? `0 0 30px ${accent}15` : 'none'
+                    }}
+                  >
+                    {isCurrent && (
+                      <div className="absolute top-0 right-0 w-32 h-32 opacity-10 pointer-events-none" style={{ background: `radial-gradient(circle at top right, ${accent}, transparent 70%)` }} />
+                    )}
+
+                    <h4 className={`text-xl font-bold mb-2 tracking-tight ${isCurrent ? 'text-white' : 'text-[#A0A0A0]'}`}>
+                      {phase.name}
+                    </h4>
+                    <p className="text-sm font-medium mb-6" style={{ color: isCurrent ? '#6B7280' : '#4B5563' }}>
+                      {phase.durationMinutes} Minutes
+                    </p>
+
+                    <div className="flex items-center">
+                      {isCurrent ? (
+                        <span className="px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest" style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }}>
+                          In Progress
+                        </span>
+                      ) : isPast ? (
+                        <span className="px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest" style={{ backgroundColor: 'rgba(255,255,255,0.03)', color: '#4B5563', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          Concluded
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest" style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: '#6B7280', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          Upcoming
+                        </span>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

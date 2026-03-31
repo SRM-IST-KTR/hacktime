@@ -25,11 +25,11 @@ export default async function ClockInitialPage() {
 
       <main className="relative flex-1 flex items-start md:items-center justify-center overflow-y-auto p-4 sm:p-6 md:p-10 stagger-in">
         {/* Background Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] sm:w-[500px] sm:h-[500px] bg-blue-500/10 blur-[110px] sm:blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] sm:w-[500px] sm:h-[500px] bg-[#FF2E9A]/5 blur-[110px] sm:blur-[120px] rounded-full pointer-events-none" />
 
         <div className="glass rounded-[2.1rem] sm:rounded-[3rem] p-6 sm:p-8 md:p-12 max-w-xl w-full text-center border-white/5 shadow-[0_64px_128px_rgba(0,0,0,0.6)] relative z-10 overflow-hidden my-4 sm:my-6 md:my-0">
-          <div className="inline-flex p-4 sm:p-5 rounded-3xl bg-blue-500/10 border border-blue-500/20 mb-6 sm:mb-8 md:mb-10 shadow-2xl group transition-all hover:scale-110 duration-500">
-            <Clock size={34} className="text-blue-400 group-hover:rotate-12 transition-transform duration-500 sm:size-10" />
+          <div className="inline-flex p-4 sm:p-5 rounded-3xl bg-[#FF2E9A]/10 border border-[#FF2E9A]/20 mb-6 sm:mb-8 md:mb-10 shadow-2xl group transition-all hover:scale-110 duration-500">
+            <Clock size={34} className="text-[#FF2E9A] group-hover:rotate-12 transition-transform duration-500 sm:size-10" />
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4 sm:mb-6">
@@ -47,9 +47,9 @@ export default async function ClockInitialPage() {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Link 
               href="/dashboard" 
-              className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-blue-600 text-white rounded-2xl font-bold text-[11px] sm:text-xs uppercase tracking-[0.16em] sm:tracking-[0.2em] hover:bg-blue-500 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-[#FF2E9A] text-white rounded-2xl font-bold text-[11px] sm:text-xs uppercase tracking-[0.16em] sm:tracking-[0.2em] hover:bg-[#FF2E9A]/80 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
             >
-              <LayoutGrid size={16} /> Command Center
+              <LayoutGrid size={16} /> Home
             </Link>
             <Link 
               href="/flow" 
@@ -61,7 +61,7 @@ export default async function ClockInitialPage() {
 
           {/* Footer Status */}
           <div className="mt-10 sm:mt-12 md:mt-16 pt-6 sm:pt-8 border-t border-white/5 flex items-center justify-center gap-2 opacity-40">
-             <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+             <div className="w-1.5 h-1.5 rounded-full bg-[#FF2E9A]"></div>
              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.22em] sm:tracking-[0.3em]">Node Offline</span>
           </div>
         </div>

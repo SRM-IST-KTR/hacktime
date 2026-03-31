@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Network, Play, Pause, FastForward, Megaphone, Terminal, CheckCircle2, Square, Trash2, ChevronDown, History, AlertTriangle, RefreshCw, Clock, Monitor, Edit, XCircle } from 'lucide-react';
+import { Network, Play, Pause, FastForward, Megaphone, Terminal, CheckCircle2, Copy, Square, Trash2, ChevronDown, History, AlertTriangle, RefreshCw, Clock, Monitor, Edit, XCircle } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [broadcastHistory, setBroadcastHistory] = useState<string[]>([]);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -209,10 +210,12 @@ export default function DashboardPage() {
 
       {/* 2. Active Engines */}
       <section>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 px-1">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#FF2E9A', boxShadow: '0 0 12px rgba(255,46,154,0.5)' }}></div>
-            <h2 className="text-lg font-semibold" style={{ color: '#E6E6E6' }}>Active Hackathon</h2>
+            <h2 className="text-lg font-semibold" style={{ color: '#E6E6E6' }}>
+              Active Hackathon{activeControlEvent ? `: ${activeControlEvent.name}` : ''}
+            </h2>
           </div>
         </div>
 
@@ -239,7 +242,18 @@ export default function DashboardPage() {
                   <div>
                     <h3 className="text-2xl font-bold mb-2 group-hover:text-[#FF2E9A] transition-colors" style={{ color: '#E6E6E6' }}>{flow.name}</h3>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono tracking-wider uppercase px-2 py-0.5 rounded" style={{ color: '#A0A0A0', backgroundColor: 'rgba(255,255,255,0.04)' }}>ID: {flow.roomId}</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(flow.roomId);
+                          setCopiedId(flow.roomId);
+                          setTimeout(() => setCopiedId(null), 2000);
+                        }}
+                        className="text-[10px] font-mono tracking-wider uppercase px-2 py-0.5 rounded transition-all flex items-center gap-1.5"
+                        style={{ color: copiedId === flow.roomId ? '#10B981' : '#A0A0A0', backgroundColor: 'rgba(255,255,255,0.04)' }}
+                      >
+                        ID: {flow.roomId}
+                        {copiedId === flow.roomId ? <CheckCircle2 size={10} /> : <Copy size={10} className="opacity-0 group-hover:opacity-100" />}
+                      </button>
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase`} style={{
                         backgroundColor: flow.status === 'RUNNING' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
                         color: flow.status === 'RUNNING' ? '#10B981' : '#F59E0B'
@@ -250,7 +264,7 @@ export default function DashboardPage() {
                   </div>
                   <button
                     onClick={() => openConfirmModal('DELETE', flow.roomId, flow.name)}
-                    className="p-2.5 hover:text-[#F43F5E] rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                    className="cursor-pointer p-2.5 hover:text-[#F43F5E] rounded-xl transition-all opacity-0 group-hover:opacity-100"
                     style={{ color: '#A0A0A0' }}
                   >
                     <Trash2 size={18} />
@@ -261,7 +275,7 @@ export default function DashboardPage() {
                   {flow.status === 'RUNNING' ? (
                     <button
                       onClick={() => engineControlExecution(flow.roomId, 'PAUSE')}
-                      className="flex-1 py-3 rounded-[20px] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                      className="cursor-pointer flex-1 py-3 rounded-[20px] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
                       style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
                     >
                       <Pause size={14} /> Pause
@@ -269,7 +283,7 @@ export default function DashboardPage() {
                   ) : (
                     <button
                       onClick={() => engineControlExecution(flow.roomId, 'RESUME')}
-                      className="flex-1 py-3 rounded-[20px] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                      className="cursor-pointer flex-1 py-3 rounded-[20px] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
                       style={{ backgroundColor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)', color: '#10B981' }}
                     >
                       <Play size={14} /> Resume
@@ -277,14 +291,14 @@ export default function DashboardPage() {
                   )}
                   <button
                     onClick={() => openConfirmModal('NEXT_PHASE', flow.roomId, flow.name)}
-                    className="flex-1 py-3 rounded-[20px] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                    className="cursor-pointer flex-1 py-3 rounded-[20px] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
                     style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
                   >
                     <FastForward size={14} /> Next
                   </button>
                   <button
                     onClick={() => openConfirmModal('STOP', flow.roomId, flow.name)}
-                    className="p-3 rounded-[20px] transition-all hover:text-[#F43F5E]"
+                    className="cursor-pointer p-3 rounded-[20px] transition-all hover:text-[#F43F5E]"
                     style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A0A0' }}
                   >
                     <Square size={16} />
@@ -462,7 +476,7 @@ export default function DashboardPage() {
                     <h3 className="text-lg font-bold group-hover:text-[#FF2E9A] transition-colors truncate pr-6" style={{ color: '#E6E6E6' }}>{flow.name}</h3>
                     <button
                       onClick={() => openConfirmModal('DELETE', flow.roomId, flow.name)}
-                      className="p-1.5 transition-all opacity-0 group-hover:opacity-100 hover:text-[#F43F5E]"
+                      className="cursor-pointer p-1.5 transition-all opacity-0 group-hover:opacity-100 hover:text-[#F43F5E]"
                       style={{ color: '#6B7280' }}
                     >
                       <Trash2 size={16} />
@@ -532,7 +546,7 @@ export default function DashboardPage() {
                 </div>
                 <button
                   onClick={() => openConfirmModal('DELETE', flow.roomId, flow.name)}
-                  className="p-2 transition-all opacity-0 group-hover:opacity-100 hover:text-[#F43F5E]"
+                  className="cursor-pointer p-2 transition-all opacity-0 group-hover:opacity-100 hover:text-[#F43F5E]"
                   style={{ color: '#6B7280' }}
                 >
                   <Trash2 size={16} />

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
-import { LayoutGrid, Clock, Network, Monitor, XCircle, X } from 'lucide-react';
+import { LayoutGrid, Clock, Network, Monitor, XCircle, X, Terminal } from 'lucide-react';
 import JoinRoomControls from '@/components/ui/JoinRoomControls';
 
 interface SidebarProps {
@@ -20,6 +20,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
   
   // Dynamic State for both Organizers and Guests
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [currentRoomName, setCurrentRoomName] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [guestName, setGuestName] = useState("");
   const [isStageTransitioning, setIsStageTransitioning] = useState(false);
@@ -41,6 +42,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
 
           if (!res.ok) {
             setCurrentRoomId(null);
+            setCurrentRoomName(null);
             setIsGuest(false);
             setGuestName("");
             if (lastClearedRoomRef.current !== sessionRoom) {
@@ -57,6 +59,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
             const timeout = setTimeout(() => {
               if (cancelled) return;
               setCurrentRoomId(room.roomId);
+              setCurrentRoomName(room.name);
               setIsGuest(false);
               setGuestName("");
             }, 0);
@@ -64,6 +67,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
           }
 
           setCurrentRoomId(null);
+          setCurrentRoomName(null);
           setIsGuest(false);
           setGuestName("");
           if (lastClearedRoomRef.current !== sessionRoom) {
@@ -73,6 +77,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
         } catch {
           if (!cancelled) {
             setCurrentRoomId(null);
+            setCurrentRoomName(null);
             setIsGuest(false);
             setGuestName("");
           }
@@ -99,6 +104,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
               if (!res.ok) {
                 localStorage.removeItem('hackclock_guest');
                 setCurrentRoomId(null);
+                setCurrentRoomName(null);
                 setIsGuest(false);
                 setGuestName("");
                 return;
@@ -111,6 +117,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
                 const timeout = setTimeout(() => {
                   if (cancelled) return;
                   setCurrentRoomId(parsed.roomId);
+                  setCurrentRoomName(room.name);
                   setIsGuest(true);
                   setGuestName(parsed.teamName || "Guest");
                 }, 0);
@@ -119,11 +126,13 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
 
               localStorage.removeItem('hackclock_guest');
               setCurrentRoomId(null);
+              setCurrentRoomName(null);
               setIsGuest(false);
               setGuestName("");
             } catch {
               if (!cancelled) {
                 setCurrentRoomId(null);
+                setCurrentRoomName(null);
                 setIsGuest(false);
                 setGuestName("");
               }
@@ -139,6 +148,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
     } else {
       const timeout = setTimeout(() => {
         setCurrentRoomId(null);
+        setCurrentRoomName(null);
         setIsGuest(false);
         setGuestName("");
       }, 0);
@@ -199,7 +209,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
       <div className="h-20 flex items-center justify-between px-8 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <h2 className="text-xl font-bold tracking-tight flex items-center gap-2" style={{ color: '#E6E6E6' }}>
           <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #5D00FF, #FF2E9A)' }}>
-            <Clock size={14} className="text-white" />
+            <Terminal size={14} className="text-white" />
           </div>
           hackTime
         </h2>
@@ -215,8 +225,9 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#FF2E9A' }}></span> 
                {isGuest ? 'GUEST NODE' : 'ACTIVE HACKATHON'}
             </p>
-            <p className="text-sm font-mono tracking-widest truncate font-semibold" style={{ color: '#E6E6E6' }}>{currentRoomId}</p>
-            {isGuest && <p className="text-[10px] font-medium mt-1 truncate" style={{ color: '#A0A0A0' }}>{guestName}</p>}
+            <p className="text-sm font-semibold truncate" style={{ color: '#E6E6E6' }}>{currentRoomName || 'Session Loading...'}</p>
+            <p className="text-[10px] font-mono tracking-widest mt-1 opacity-50" style={{ color: '#A0A0A0' }}>{currentRoomId}</p>
+            {isGuest && <p className="text-[10px] font-medium mt-1 truncate" style={{ color: '#FF2E9A' }}>{guestName}</p>}
             
             <button onClick={handleDisconnect} className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-all hover:text-[#F43F5E]" style={{ color: '#A0A0A0' }}>
                <XCircle size={16} />

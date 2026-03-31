@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
-import { Terminal, Megaphone, Clock, X, History } from 'lucide-react';
+import { Terminal, Megaphone, Clock, X, History, Home } from 'lucide-react';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -15,7 +15,7 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [lastAnnouncementTime, setLastAnnouncementTime] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
+
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const announcementDurationRef = useRef(10);
@@ -37,8 +37,8 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   }, [roomId]);
 
   const { data: eventData } = useSWR(
-    roomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}` : null, 
-    fetcher, 
+    roomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}` : null,
+    fetcher,
     { refreshInterval: 5000 }
   );
 
@@ -130,13 +130,13 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
         seconds: Math.floor((distance % (1000 * 60)) / 1000)
       });
     };
-    updateTimer(); 
+    updateTimer();
     const timer = setInterval(updateTimer, 1000);
     return () => clearInterval(timer);
   }, [eventData]);
 
   const formatTime = (time: number) => Math.max(0, time).toString().padStart(2, '0');
-  
+
   if (!eventData || eventData.error || !eventData.phases) {
     return (
       <div className="flex flex-col min-h-screen items-center justify-center p-6" style={{ backgroundColor: '#0F0F10' }}>
@@ -150,8 +150,8 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
           <p className="text-lg font-medium leading-relaxed mb-12" style={{ color: '#A0A0A0' }}>
             The stage endpoint you are attempting to access does not exist or has been decommissioned.
           </p>
-          <Link 
-            href="/dashboard" 
+          <Link
+            href="/dashboard"
             className="px-8 py-4 rounded-[20px] font-bold text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-2"
             style={{ backgroundColor: '#CFFF04', color: '#0F0F10' }}
           >
@@ -177,13 +177,13 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
               </div>
             ) : (
               <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-colors" style={{ background: 'linear-gradient(135deg, #5D00FF, #FF2E9A)', boxShadow: `0 0 20px ${accent}30` }}>
-                 <Terminal size={24} className="md:size-[32px]" style={{ color: '#0F0F10' }} strokeWidth={2.5} />
+                <Terminal size={24} className="md:size-[32px]" style={{ color: '#0F0F10' }} strokeWidth={2.5} />
               </div>
             )}
           </Link>
           <div>
             <h1 className="text-xl md:text-3xl font-black tracking-tight leading-none mb-1 truncate max-w-[150px] sm:max-w-none" style={{ color: '#E6E6E6' }}>{eventData.name}</h1>
-            <p className="text-[9px] md:text-[11px] font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase" style={{ color: '#FF2E9A' }}>hackTime Terminal</p>
+            <p className="text-[9px] md:text-[11px] font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase" style={{ color: '#FF2E9A' }}>Stage Broadcast Mode</p>
           </div>
         </div>
 
@@ -205,8 +205,8 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
         <p className="text-[10px] md:text-sm font-bold tracking-[0.3em] md:tracking-[0.5em] uppercase mb-4 md:mb-8 z-10" style={{ color: '#6B7280' }}>Time Remaining</p>
         
         {/* TIMER — Largest visual element per brand guidelines */}
-        <div 
-          className="text-[clamp(4rem,25vw,18rem)] font-black tracking-tighter leading-none font-mono z-10 mb-8 md:mb-16 flex items-center" 
+        <div
+          className="text-[clamp(4rem,25vw,18rem)] font-black tracking-tighter leading-none font-mono z-10 mb-8 md:mb-16 flex items-center"
           style={{ color: '#E6E6E6', textShadow: `0 0 80px ${accent}30` }}
         >
           {formatTime(timeLeft.hours)}
@@ -232,13 +232,13 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
 
         {/* Room Code — Cyber Lime accent */}
         <div className="z-10 text-center rounded-[20px] px-8 md:px-16 py-4 md:py-6 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-md" style={{ backgroundColor: 'rgba(28,28,28,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}>
-           <p className="text-[9px] md:text-[11px] font-bold tracking-[0.3em] md:tracking-[0.5em] uppercase mb-1 md:mb-2" style={{ color: '#CFFF04' }}>Room Access Code</p>
-           <p className="text-4xl md:text-7xl font-black font-mono tracking-widest" style={{ color: '#E6E6E6' }}>{roomId}</p>
+          <p className="text-[9px] md:text-[11px] font-bold tracking-[0.3em] md:tracking-[0.5em] uppercase mb-1 md:mb-2" style={{ color: '#CFFF04' }}>Room Access Code</p>
+          <p className="text-4xl md:text-7xl font-black font-mono tracking-widest" style={{ color: '#E6E6E6' }}>{roomId}</p>
         </div>
       </main>
 
       <footer className="h-16 md:h-20 flex items-stretch shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', backgroundColor: '#0F0F10' }}>
-        <div 
+        <div
           onClick={() => setShowHistory(true)}
           className="w-40 md:w-80 flex items-center px-4 md:px-8 gap-3 md:gap-4 cursor-pointer transition-all group"
           style={{ backgroundColor: '#1C1C1C', borderRight: '1px solid rgba(255,255,255,0.04)' }}
@@ -248,22 +248,31 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
           <Megaphone size={16} className="md:size-[20px] transition-transform group-hover:scale-110" style={{ color: '#FF2E9A' }} />
           <span className="text-[10px] md:text-sm font-bold tracking-[0.1em] md:tracking-[0.2em] uppercase truncate" style={{ color: '#E6E6E6' }}>{eventData.announcement || "SYSTEM NOMINAL"}</span>
         </div>
-        
+
         <div className="flex-1 flex items-center justify-end pr-3 pl-4 md:pr-10 md:pl-8">
-           <div className="flex items-center gap-2.5 md:gap-3.5 px-4 md:px-6 py-2.5 md:py-3 rounded-md" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <Clock size={15} className="md:size-[18px]" style={{ color: '#FF2E9A' }} />
-              <span className="text-sm md:text-base font-mono tracking-[0.22em]" style={{ color: '#E6E6E6' }}>{realTime}</span>
-           </div>
+          <div className="flex items-center gap-2.5 md:gap-3.5 px-4 md:px-6 py-2.5 md:py-3 rounded-md" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.04)' }}>
+            <Clock size={15} className="md:size-[18px]" style={{ color: '#FF2E9A' }} />
+            <span className="text-sm md:text-base font-mono tracking-[0.22em]" style={{ color: '#E6E6E6' }}>{realTime}</span>
+          </div>
         </div>
       </footer>
 
+      {/* Return Home Button - Subtle bottom right */}
+      <Link
+        href="/dashboard"
+        className="fixed bottom-6 right-6 z-[60] p-4 glass rounded-full opacity-20 hover:opacity-100 transition-all hover:scale-110 group"
+        title="Return to Hub"
+      >
+        <Home size={20} className="text-[#A0A0A0] group-hover:text-[#FF2E9A]" />
+      </Link>
+
       {/* Expandable History Overlay */}
       {showHistory && (
-        <div 
+        <div
           className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-end justify-start p-6 md:p-12 animate-in fade-in duration-300"
           onClick={() => setShowHistory(false)}
         >
-          <div 
+          <div
             className="w-full max-w-lg overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
             style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px' }}
             onClick={(e) => e.stopPropagation()}
@@ -293,13 +302,13 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
 
       {/* MASSIVE FULL SCREEN OVERLAY */}
       {showAnnouncement && (
-        <div 
+        <div
           className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-md cursor-pointer p-6"
           style={{ backgroundColor: 'rgba(15,15,16,0.9)' }}
           onClick={() => setShowAnnouncement(false)}
         >
           <div className="relative max-w-[90%] w-full text-center animate-in fade-in zoom-in duration-300">
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); setShowAnnouncement(false); }}
               className="absolute top-4 right-4 hover:text-white" style={{ color: '#6B7280' }}
             >
