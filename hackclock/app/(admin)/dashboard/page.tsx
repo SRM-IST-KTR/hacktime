@@ -13,11 +13,12 @@ interface HackathonFlow {
   roomId: string;
   name: string;
   status: 'DRAFT' | 'RUNNING' | 'PAUSED' | 'COMPLETED';
-  currentPhaseIndex: number;
-  phases: Array<{ name: string; durationMinutes: number }>;
+  currentPhaseIndex?: number;
+  phases?: Array<{ name: string; durationMinutes: number }>;
   branding?: { accentColor?: string; logoUrl?: string };
   participants?: Array<{ teamName: string }>;
   updatedAt: string;
+  error?: string;
 }
 
 interface Participant {
@@ -26,6 +27,7 @@ interface Participant {
 
 export default function DashboardPage() {
   const { data: session, update } = useSession();
+  const lastClearedRoomRef = useRef<string | null>(null);
   const activeRoomId = (session?.user as { activeRoomId?: string })?.activeRoomId;
   const userEmail = session?.user?.email;
 
@@ -62,27 +64,28 @@ export default function DashboardPage() {
     { refreshInterval: 2000 }
   );
 
-  // Auto-disconnect if the active room was deleted (API returns error)
-  const hasCleanedUpRef = useRef(false);
+  const isValidActiveEvent = (event: HackathonFlow | undefined): event is HackathonFlow => {
+    return Boolean(event && Array.isArray(event.phases));
+  };
+
+  const activeControlEvent =
+    activeRoomId && isValidActiveEvent(activeEvent) && activeEvent.roomId === activeRoomId
+      ? activeEvent
+      : null;
+
   useEffect(() => {
-    if (activeRoomId && activeEvent && ('error' in activeEvent) && !hasCleanedUpRef.current) {
-      hasCleanedUpRef.current = true;
-      // Room no longer exists — clear the stale terminal link
-      const cleanup = async () => {
-        try {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/active-room`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: userEmail, roomId: null })
-          });
-          await update({ activeRoomId: null });
-        } catch {}
-      };
-      cleanup();
+    if (!activeRoomId || !activeEvent) return;
+
+    if (!isValidActiveEvent(activeEvent) || activeEvent.roomId !== activeRoomId) {
+      if (lastClearedRoomRef.current !== activeRoomId) {
+        lastClearedRoomRef.current = activeRoomId;
+        update({ activeRoomId: null });
+      }
+      return;
     }
-    // Reset the guard when the user connects to a new room
-    if (!activeRoomId) hasCleanedUpRef.current = false;
-  }, [activeEvent, activeRoomId, userEmail, update]);
+
+    lastClearedRoomRef.current = null;
+  }, [activeRoomId, activeEvent, update]);
 
   useEffect(() => {
     const history = localStorage.getItem('broadcast_history');
@@ -134,8 +137,8 @@ export default function DashboardPage() {
       });
       mutateAll();
       if (roomId === activeRoomId) {
-        mutateActive();
         await update({ activeRoomId: null });
+        mutateActive();
       }
     } catch { alert("System Error: Deletion failed."); }
   };
@@ -308,7 +311,7 @@ export default function DashboardPage() {
       </section>
 
       {/* 4. Global Control */}
-      {activeEvent && !('error' in activeEvent) && activeEvent.status !== 'COMPLETED' && (
+      {activeControlEvent && activeControlEvent.status !== 'COMPLETED' && (
         <section id="active-control" className="rounded-[20px] p-10 relative overflow-hidden" style={{ backgroundColor: 'rgba(28,28,28,0.6)', border: '1px solid rgba(255,46,154,0.08)', boxShadow: '0 32px 64px rgba(0,0,0,0.4)' }}>
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-10">
@@ -316,11 +319,11 @@ export default function DashboardPage() {
                 <Terminal size={20} />
               </div>
               <div>
-                <h2 className="text-xl font-bold" style={{ color: '#E6E6E6' }}>{activeEvent.name}</h2>
+                <h2 className="text-xl font-bold" style={{ color: '#E6E6E6' }}>{activeControlEvent.name}</h2>
                 <p className="text-xs font-medium" style={{ color: '#6B7280' }}>Live Control Interface</p>
               </div>
               <Link
-                href={`/flow?edit=${activeEvent.roomId}`}
+                href={`/flow?edit=${activeControlEvent.roomId}`}
                 className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all"
                 style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A0A0' }}
               >
@@ -339,9 +342,9 @@ export default function DashboardPage() {
               <div className="flex-1 space-y-10">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: 'Status', value: activeEvent.status, sub: 'Current State' },
-                    { label: 'Phase', value: (Array.isArray(activeEvent.phases) && typeof activeEvent.currentPhaseIndex === 'number' && activeEvent.phases[activeEvent.currentPhaseIndex]) ? activeEvent.phases[activeEvent.currentPhaseIndex].name : "N/A", sub: 'Phase Execution' },
-                    { label: 'Teams', value: activeEvent.participants?.length || 0, sub: 'Total Connected' },
+                    { label: 'Status', value: activeControlEvent.status, sub: 'Current State' },
+                    { label: 'Phase', value: activeControlEvent.phases?.[activeControlEvent.currentPhaseIndex ?? 0]?.name || "N/A", sub: 'Phase Execution' },
+                    { label: 'Teams', value: activeControlEvent.participants?.length || 0, sub: 'Total Connected' },
                     { label: 'Node ID', value: activeRoomId, sub: 'Active Room' },
                   ].map((item, i) => (
                     <div key={i} className="p-5 rounded-[20px]" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -417,13 +420,13 @@ export default function DashboardPage() {
                   <RefreshCw size={12} className="cursor-pointer transition-colors" style={{ color: '#6B7280' }} onClick={() => mutateActive()} />
                 </div>
                 <div className="rounded-[20px] p-6 h-[280px] overflow-y-auto space-y-3 custom-scrollbar" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  {activeEvent.participants?.map((p: Participant, i: number) => (
+                  {activeControlEvent.participants?.map((p: Participant, i: number) => (
                     <div key={i} className="flex items-center gap-3 py-2 last:border-0 group" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#10B981', boxShadow: '0 0 8px rgba(16,185,129,0.4)' }}></div>
                       <span className="text-sm font-medium truncate group-hover:text-white transition-colors" style={{ color: '#A0A0A0' }}>{p.teamName}</span>
                     </div>
                   ))}
-                  {(!activeEvent.participants || activeEvent.participants.length === 0) && (
+                  {(!activeControlEvent.participants || activeControlEvent.participants.length === 0) && (
                     <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
                       <Monitor size={32} className="mb-2" style={{ color: '#6B7280' }} />
                       <p className="text-[11px] font-medium" style={{ color: '#6B7280' }}>Listening for nodes...</p>
@@ -466,12 +469,12 @@ export default function DashboardPage() {
                     </button>
                   </div>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider" style={{ color: '#6B7280' }}>
-                      <Clock size={12} /> {flow.phases.reduce((acc: number, p) => acc + p.durationMinutes, 0)}m
+                    <div className="flex items-center gap-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      <Clock size={12} /> {flow.phases?.reduce((acc: number, p) => acc + p.durationMinutes, 0) ?? 0}m
                     </div>
-                    <div className="w-1 h-1 rounded-full" style={{ backgroundColor: '#6B7280' }}></div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#6B7280' }}>
-                      {flow.phases.length} Phases
+                    <div className="w-1 h-1 rounded-full bg-slate-700"></div>
+                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      {flow.phases?.length ?? 0} Phases
                     </div>
                   </div>
                 </div>

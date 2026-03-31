@@ -16,6 +16,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
   const router = useRouter();
   const { data: session, update } = useSession();
   const stageTransitionTimeoutRef = useRef<number | null>(null);
+  const lastClearedRoomRef = useRef<string | null>(null);
   
   // Dynamic State for both Organizers and Guests
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
@@ -24,14 +25,64 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
   const [isStageTransitioning, setIsStageTransitioning] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     // 1. Check for Organizer Session First
     const sessionRoom = (session?.user as { activeRoomId?: string })?.activeRoomId;
     if (sessionRoom) {
-      const timeout = setTimeout(() => {
-        setCurrentRoomId(sessionRoom);
-        setIsGuest(false);
-      }, 0);
-      return () => clearTimeout(timeout);
+      if (lastClearedRoomRef.current !== sessionRoom) {
+        lastClearedRoomRef.current = null;
+      }
+
+      const validateOrganizerRoom = async () => {
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${sessionRoom}`);
+          if (cancelled) return;
+
+          if (!res.ok) {
+            setCurrentRoomId(null);
+            setIsGuest(false);
+            setGuestName("");
+            if (lastClearedRoomRef.current !== sessionRoom) {
+              lastClearedRoomRef.current = sessionRoom;
+              await update({ activeRoomId: null });
+            }
+            return;
+          }
+
+          const room = await res.json();
+          if (cancelled) return;
+
+          if (room?.roomId && (room.status === 'RUNNING' || room.status === 'PAUSED') && !room.error) {
+            const timeout = setTimeout(() => {
+              if (cancelled) return;
+              setCurrentRoomId(room.roomId);
+              setIsGuest(false);
+              setGuestName("");
+            }, 0);
+            return () => clearTimeout(timeout);
+          }
+
+          setCurrentRoomId(null);
+          setIsGuest(false);
+          setGuestName("");
+          if (lastClearedRoomRef.current !== sessionRoom) {
+            lastClearedRoomRef.current = sessionRoom;
+            await update({ activeRoomId: null });
+          }
+        } catch {
+          if (!cancelled) {
+            setCurrentRoomId(null);
+            setIsGuest(false);
+            setGuestName("");
+          }
+        }
+      };
+
+      void validateOrganizerRoom();
+      return () => {
+        cancelled = true;
+      };
     }
 
     // 2. Check for Guest Session Fallback
@@ -40,12 +91,49 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
       try {
         const parsed = JSON.parse(guestData);
         if (parsed.roomId) {
-          const timeout = setTimeout(() => {
-            setCurrentRoomId(parsed.roomId);
-            setIsGuest(true);
-            setGuestName(parsed.teamName || "Guest");
-          }, 0);
-          return () => clearTimeout(timeout);
+          const validateGuestRoom = async () => {
+            try {
+              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${parsed.roomId}`);
+              if (cancelled) return;
+
+              if (!res.ok) {
+                localStorage.removeItem('hackclock_guest');
+                setCurrentRoomId(null);
+                setIsGuest(false);
+                setGuestName("");
+                return;
+              }
+
+              const room = await res.json();
+              if (cancelled) return;
+
+              if (room?.roomId && !room.error) {
+                const timeout = setTimeout(() => {
+                  if (cancelled) return;
+                  setCurrentRoomId(parsed.roomId);
+                  setIsGuest(true);
+                  setGuestName(parsed.teamName || "Guest");
+                }, 0);
+                return () => clearTimeout(timeout);
+              }
+
+              localStorage.removeItem('hackclock_guest');
+              setCurrentRoomId(null);
+              setIsGuest(false);
+              setGuestName("");
+            } catch {
+              if (!cancelled) {
+                setCurrentRoomId(null);
+                setIsGuest(false);
+                setGuestName("");
+              }
+            }
+          };
+
+          void validateGuestRoom();
+          return () => {
+            cancelled = true;
+          };
         }
       } catch { console.error("Guest session parse failed"); }
     } else {
@@ -56,7 +144,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
       }, 0);
       return () => clearTimeout(timeout);
     }
-  }, [session]);
+  }, [session, update]);
 
   useEffect(() => {
     return () => {

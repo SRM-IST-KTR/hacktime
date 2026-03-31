@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import Sidebar from '@/components/ui/Sidebar';
@@ -24,6 +24,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
+  const announcementDurationRef = useRef(10);
 
   useEffect(() => {
     params.then(p => setRoomId(p.id));
@@ -90,22 +91,27 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
           });
         }, 0);
 
+        announcementDurationRef.current = eventData.announcementDuration || 10;
         const announcementTimeout = setTimeout(() => {
           setShowAnnouncement(true);
         }, 0);
-        const durationMs = (eventData.announcementDuration || 10) * 1000;
-        const timer = setTimeout(() => setShowAnnouncement(false), durationMs);
         return () => {
           clearTimeout(timestampTimeout);
           clearTimeout(historyTimeout);
           clearTimeout(announcementTimeout);
-          clearTimeout(timer);
         };
       }
 
       return () => clearTimeout(timestampTimeout);
     }
   }, [eventData, isInitialLoad, lastAnnouncementTime, roomId]);
+
+  // Auto-dismiss announcement after duration (separate effect so SWR re-fetches don't clear the timer)
+  useEffect(() => {
+    if (!showAnnouncement) return;
+    const timer = setTimeout(() => setShowAnnouncement(false), announcementDurationRef.current * 1000);
+    return () => clearTimeout(timer);
+  }, [showAnnouncement]);
 
   // Normal Clock Logic
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { Terminal, Megaphone, Clock, X, History } from 'lucide-react';
@@ -18,6 +18,7 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
+  const announcementDurationRef = useRef(10);
 
   useEffect(() => {
     params.then(p => setRoomId(p.id));
@@ -49,44 +50,60 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   }, []);
 
   useEffect(() => {
-    if (!eventData) return;
+    if (!eventData || !roomId) return;
 
-    if (eventData.announcementTimestamp && eventData.announcementTimestamp !== lastAnnouncementTime) {
-      if (eventData.announcement) {
+    const currentTS = eventData.announcementTimestamp;
+
+    // On initial load, record the current timestamp without triggering overlay
+    if (isInitialLoad) {
+      if (!lastAnnouncementTime && currentTS) {
         const timeout = setTimeout(() => {
+          setLastAnnouncementTime(currentTS);
+        }, 0);
+        return () => clearTimeout(timeout);
+      }
+      const timeout = setTimeout(() => {
+        setIsInitialLoad(false);
+      }, 0);
+      return () => clearTimeout(timeout);
+    }
+
+    // When a new announcement arrives (timestamp changed)
+    if (currentTS && currentTS !== lastAnnouncementTime) {
+      const timestampTimeout = setTimeout(() => {
+        setLastAnnouncementTime(currentTS);
+      }, 0);
+
+      if (eventData.announcement) {
+        // Add to history
+        const historyTimeout = setTimeout(() => {
           setHistory(prev => {
-            if (prev.includes(eventData.announcement)) return prev;
-            const newHistory = [eventData.announcement, ...prev].slice(0, 10);
+            const newHistory = [eventData.announcement, ...prev.filter(h => h !== eventData.announcement)].slice(0, 10);
             localStorage.setItem(`stage_history_${roomId}`, JSON.stringify(newHistory));
             return newHistory;
           });
         }, 0);
-        return () => clearTimeout(timeout);
-      }
-    }
 
-    if (isInitialLoad) {
-      const ts = eventData.announcementTimestamp;
-      setTimeout(() => {
-        setLastAnnouncementTime(ts);
-        setIsInitialLoad(false);
-      }, 0);
-      return;
-    }
-
-    if (eventData.announcementTimestamp && eventData.announcementTimestamp !== lastAnnouncementTime) {
-      setTimeout(() => setLastAnnouncementTime(eventData.announcementTimestamp), 0);
-      if (eventData.announcement) {
+        announcementDurationRef.current = eventData.announcementDuration || 10;
         const announcementTimeout = setTimeout(() => setShowAnnouncement(true), 0);
-        const durationMs = (eventData.announcementDuration || 10) * 1000;
-        const timer = setTimeout(() => setShowAnnouncement(false), durationMs);
+
         return () => {
+          clearTimeout(timestampTimeout);
+          clearTimeout(historyTimeout);
           clearTimeout(announcementTimeout);
-          clearTimeout(timer);
         };
       }
+
+      return () => clearTimeout(timestampTimeout);
     }
   }, [eventData, isInitialLoad, lastAnnouncementTime, roomId]);
+
+  // Auto-dismiss announcement after duration (separate effect so SWR re-fetches don't clear the timer)
+  useEffect(() => {
+    if (!showAnnouncement) return;
+    const timer = setTimeout(() => setShowAnnouncement(false), announcementDurationRef.current * 1000);
+    return () => clearTimeout(timer);
+  }, [showAnnouncement]);
 
   useEffect(() => {
     if (!eventData) return;
@@ -220,7 +237,7 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
         </div>
       </main>
 
-      <footer className="h-16 md:h-20 flex justify-between items-stretch shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', backgroundColor: '#0F0F10' }}>
+      <footer className="h-16 md:h-20 flex items-stretch shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', backgroundColor: '#0F0F10' }}>
         <div 
           onClick={() => setShowHistory(true)}
           className="w-40 md:w-80 flex items-center px-4 md:px-8 gap-3 md:gap-4 cursor-pointer transition-all group"
@@ -232,10 +249,10 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
           <span className="text-[10px] md:text-sm font-bold tracking-[0.1em] md:tracking-[0.2em] uppercase truncate" style={{ color: '#E6E6E6' }}>{eventData.announcement || "SYSTEM NOMINAL"}</span>
         </div>
         
-        <div className="flex-1 flex items-center justify-center gap-4 md:gap-6">
-           <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-md" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <Clock size={12} className="md:size-[14px]" style={{ color: '#FF2E9A' }} />
-              <span className="text-[10px] md:text-xs font-mono tracking-widest" style={{ color: '#E6E6E6' }}>{realTime}</span>
+        <div className="flex-1 flex items-center justify-end pr-3 pl-4 md:pr-10 md:pl-8">
+           <div className="flex items-center gap-2.5 md:gap-3.5 px-4 md:px-6 py-2.5 md:py-3 rounded-md" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <Clock size={15} className="md:size-[18px]" style={{ color: '#FF2E9A' }} />
+              <span className="text-sm md:text-base font-mono tracking-[0.22em]" style={{ color: '#E6E6E6' }}>{realTime}</span>
            </div>
         </div>
       </footer>

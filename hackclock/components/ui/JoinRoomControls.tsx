@@ -98,10 +98,7 @@ export default function JoinRoomControls({
           placeholder="EX: AB12CD"
           autoCapitalize="characters"
           autoCorrect="off"
-          className="w-full rounded-[20px] px-5 py-4 text-sm font-mono tracking-[0.25em] uppercase outline-none transition-all"
-          style={{ backgroundColor: 'rgba(15,15,16,0.8)', border: '1px solid rgba(255,255,255,0.08)', color: '#E6E6E6' }}
-          onFocus={(e) => e.target.style.borderColor = 'rgba(255,46,154,0.4)'}
-          onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+          className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 sm:px-5 py-3.5 sm:py-4 text-sm font-mono tracking-[0.12em] sm:tracking-[0.25em] text-white uppercase outline-none transition-all focus:border-blue-500/50 focus:bg-black/40"
         />
       </div>
 
@@ -112,8 +109,7 @@ export default function JoinRoomControls({
       <button
         type="submit"
         disabled={isJoining}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-[20px] px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] transition-all disabled:opacity-60"
-        style={{ backgroundColor: '#CFFF04', color: '#0F0F10' }}
+        className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-bold uppercase tracking-[0.16em] sm:tracking-[0.2em] text-white transition-all hover:bg-blue-500 disabled:opacity-60"
       >
         {isJoining ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
         {isJoining ? "Joining..." : buttonLabel}

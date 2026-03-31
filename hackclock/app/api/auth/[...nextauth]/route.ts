@@ -64,21 +64,23 @@ export const authOptions: NextAuthOptions = {
       }
       
       if (trigger === "update" && session) {
-        // Handle both flat format: update({ activeRoomId }) and nested: update({ user: { activeRoomId } })
-        const flatSession = session as Record<string, unknown>;
-        const nestedUser = (session as Session)?.user as (Session["user"] & { activeRoomId?: string }) | undefined;
+        const updatedSession = session as Session & {
+          name?: string;
+          image?: string;
+          activeRoomId?: string | null;
+        };
+        const updatedUser = updatedSession.user as (Session["user"] & {
+          activeRoomId?: string | null;
+        }) | undefined;
 
-        // Check flat format first (from update({ activeRoomId: null }))
-        if ('activeRoomId' in flatSession) {
-          authToken.activeRoomId = flatSession.activeRoomId as string | undefined;
-        } else if (nestedUser?.activeRoomId !== undefined) {
-          authToken.activeRoomId = nestedUser.activeRoomId;
-        }
+        const nextName = updatedUser?.name ?? updatedSession.name;
+        const nextImage = updatedUser?.image ?? updatedSession.image;
+        const hasRootActiveRoom = Object.prototype.hasOwnProperty.call(updatedSession, "activeRoomId");
+        const nextActiveRoomId = updatedUser?.activeRoomId ?? (hasRootActiveRoom ? updatedSession.activeRoomId : undefined);
 
-        if (nestedUser?.name) authToken.name = nestedUser.name;
-        if (nestedUser?.image) authToken.picture = nestedUser.image;
-        if (flatSession.name) authToken.name = flatSession.name as string;
-        if (flatSession.image) authToken.picture = flatSession.image as string;
+        if (nextName) authToken.name = nextName;
+        if (nextImage) authToken.picture = nextImage;
+        if (nextActiveRoomId !== undefined) authToken.activeRoomId = nextActiveRoomId ?? undefined;
       }
       
       return authToken;
