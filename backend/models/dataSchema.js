@@ -8,7 +8,7 @@ const PhaseSchema = new mongoose.Schema({
 
 const HackathonSchema = new mongoose.Schema({
   name: { type: String, required: true }, 
-  roomId: { type: String, required: true, unique: true }, 
+  roomId: { type: String, required: true, unique: true, index: true }, 
   organizerSecret: { type: String, required: true }, 
   isDeleted: { type: Boolean, default: false },
   
