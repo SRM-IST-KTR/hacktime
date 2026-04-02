@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -105,13 +106,22 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  creator: "GitHub Community SRM",
+  publisher: "GitHub Community SRM",
   openGraph: {
     title: "Hackathon Control Room, Countdown Timer & Stage View",
     description:
       "A synchronized control room for organizers, AV teams, and participants running hackathons and live event timelines.",
     url: siteUrl,
     siteName: "hackTime",
-    images: ["/og-image.JPG"],
+    images: [
+      {
+        url: "/og-image.JPG",
+        width: 1200,
+        height: 630,
+        alt: "hackTime Open Graph social frame",
+      },
+    ],
     type: "website",
   },
   twitter: {
@@ -146,7 +156,7 @@ export default function Home() {
       },
       creator: {
         "@type": "Organization",
-        name: "GitHub Community SRMIST",
+        name: "GitHub Community SRM",
         url: "https://githubsrmist.in",
       },
       featureList: [
@@ -181,9 +191,7 @@ export default function Home() {
       <header className="sticky top-0 z-20 border-b border-white/8 bg-[#0F0F10]/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="group inline-flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-linear-to-br from-[#5D00FF] to-[#FF2E9A]">
-              <Clock size={14} className="text-white" strokeWidth={2.5} />
-            </div>
+            <Image src="/logo.svg" alt="hackTime logo" width={28} height={28} className="rounded-md" priority />
             <span className="text-sm font-semibold tracking-tight text-white group-hover:text-[#CFFF04] transition-colors">
               hackTime
             </span>
@@ -235,6 +243,19 @@ export default function Home() {
                 Join as Participant
               </Link>
             </div>
+
+            <p className="mt-5 text-xs text-[#A0A0A0]">
+              Created by{" "}
+              <a
+                href="https://githubsrmist.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[#E6E6E6] underline-offset-4 transition-colors hover:text-[#CFFF04] hover:underline"
+              >
+                GitHub Community SRM
+              </a>
+              .
+            </p>
 
             <div className="mt-10 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[

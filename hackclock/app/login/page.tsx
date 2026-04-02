@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Clock, AtSign, Lock, LogIn, Users, Hash, UserPlus, ArrowRight, ShieldCheck, User, Image as ImageIcon } from 'lucide-react';
@@ -153,9 +154,7 @@ export default function LoginPage() {
 
       <header className="h-16 flex justify-between items-center px-8 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(28,28,28,0.5)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #5D00FF, #FF2E9A)' }}>
-            <Clock size={14} strokeWidth={3} className="text-white" />
-          </div>
+          <Image src="/logo.svg" alt="hackTime logo" width={24} height={24} className="rounded" priority />
           <h2 className="text-lg font-bold tracking-tight" style={{ color: '#E6E6E6' }}>hackTime</h2>
         </div>
         <div className="flex items-center gap-6 text-sm font-medium" style={{ color: '#A0A0A0' }}>
@@ -178,9 +177,7 @@ export default function LoginPage() {
       <main className="flex-1 flex flex-col items-center justify-center p-4 z-10">
 
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 border shadow-lg" style={{ backgroundColor: '#1C1C1C', borderColor: 'rgba(255,255,255,0.06)' }}>
-            <Clock size={24} style={{ color: '#FF2E9A' }} />
-          </div>
+          <Image src="/logo.svg" alt="hackTime logo" width={48} height={48} className="mb-4 rounded-xl border shadow-lg" style={{ borderColor: 'rgba(255,255,255,0.06)' }} priority />
           <h1 className="text-3xl font-black tracking-tight mb-2" style={{ color: '#E6E6E6' }}>hackTime</h1>
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: '#A0A0A0' }}>Terminal Session Authentication</p>
         </div>
@@ -205,8 +202,8 @@ export default function LoginPage() {
                   setError('');
                 }}
                 className={`flex-1 py-4 text-xs font-bold tracking-wider uppercase transition-colors border-t-2 ${activeTab === tab
-                    ? ''
-                    : 'hover:bg-[#1C1C1C]/50 hover:text-white'
+                  ? ''
+                  : 'hover:bg-[#1C1C1C]/50 hover:text-white'
                   }`}
                 style={activeTab === tab
                   ? { color: '#FF2E9A', backgroundColor: '#1C1C1C', borderColor: '#FF2E9A' }

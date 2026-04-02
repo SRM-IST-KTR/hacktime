@@ -1,10 +1,11 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
-import { LayoutGrid, Clock, Network, Monitor, XCircle, X, Terminal } from 'lucide-react';
+import { LayoutGrid, Clock, Network, Monitor, XCircle, X } from 'lucide-react';
 import JoinRoomControls from '@/components/ui/JoinRoomControls';
 
 interface SidebarProps {
@@ -17,7 +18,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
   const { data: session, update } = useSession();
   const stageTransitionTimeoutRef = useRef<number | null>(null);
   const lastClearedRoomRef = useRef<string | null>(null);
-  
+
   // Dynamic State for both Organizers and Guests
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [currentRoomName, setCurrentRoomName] = useState<string | null>(null);
@@ -208,29 +209,27 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
     <aside className={`w-full h-full backdrop-blur-2xl flex flex-col z-20 overflow-y-auto transition-all duration-200 ${isStageTransitioning ? '-translate-x-full opacity-0 scale-[0.98]' : 'translate-x-0 opacity-100 scale-100'}`} style={{ backgroundColor: 'rgba(15,15,16,0.8)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
       <div className="h-20 flex items-center justify-between px-8 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <h2 className="text-xl font-bold tracking-tight flex items-center gap-2" style={{ color: '#E6E6E6' }}>
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #5D00FF, #FF2E9A)' }}>
-            <Terminal size={14} className="text-white" />
-          </div>
+          <Image src="/logo.svg" alt="hackTime logo" width={24} height={24} className="rounded-lg" />
           hackTime
         </h2>
         <button className="lg:hidden transition-colors hover:text-white" style={{ color: '#A0A0A0' }} onClick={onNavItemClick}>
           <X size={20} />
         </button>
       </div>
-      
+
       <div className="px-6 py-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         {currentRoomId ? (
           <div className="p-4 rounded-[20px] relative group overflow-hidden" style={{ backgroundColor: 'rgba(28,28,28,0.6)', border: '1px solid rgba(255,46,154,0.15)', boxShadow: '0 8px 32px rgba(255,46,154,0.06)' }}>
             <p className="text-[9px] uppercase font-bold tracking-[0.15em] mb-1.5 flex items-center gap-2" style={{ color: '#FF2E9A' }}>
-               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#FF2E9A' }}></span> 
-               {isGuest ? 'GUEST NODE' : 'ACTIVE HACKATHON'}
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#FF2E9A' }}></span>
+              {isGuest ? 'GUEST NODE' : 'ACTIVE HACKATHON'}
             </p>
             <p className="text-sm font-semibold truncate" style={{ color: '#E6E6E6' }}>{currentRoomName || 'Session Loading...'}</p>
             <p className="text-[10px] font-mono tracking-widest mt-1 opacity-50" style={{ color: '#A0A0A0' }}>{currentRoomId}</p>
             {isGuest && <p className="text-[10px] font-medium mt-1 truncate" style={{ color: '#FF2E9A' }}>{guestName}</p>}
-            
+
             <button onClick={handleDisconnect} className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-all hover:text-[#F43F5E]" style={{ color: '#A0A0A0' }}>
-               <XCircle size={16} />
+              <XCircle size={16} />
             </button>
           </div>
         ) : (
@@ -247,8 +246,8 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
             const isActive = pathname.startsWith(item.href) && item.href !== '/';
             return (
               <li key={item.name}>
-                <Link 
-                  href={item.href} 
+                <Link
+                  href={item.href}
                   onClick={(e) => {
                     const shouldAnimateStageExit = item.name === 'Stage Mode' && item.href.startsWith('/room/') && item.href.endsWith('/stage');
 
@@ -260,12 +259,12 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
                     onNavItemClick?.();
                   }}
                   className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all group`}
-                  style={isActive 
+                  style={isActive
                     ? { backgroundColor: 'rgba(255,46,154,0.08)', color: '#FF2E9A', boxShadow: 'inset 0 0 20px rgba(255,46,154,0.04)' }
                     : { color: '#A0A0A0' }
                   }
-                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = '#E6E6E6'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; }}}
-                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = '#A0A0A0'; e.currentTarget.style.backgroundColor = 'transparent'; }}}
+                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = '#E6E6E6'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; } }}
+                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = '#A0A0A0'; e.currentTarget.style.backgroundColor = 'transparent'; } }}
                 >
                   <item.icon size={18} style={{ color: isActive ? '#FF2E9A' : '#6B7280' }} />
                   {item.name}
@@ -285,7 +284,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
             description="Join an active hackathon with a room ID. We'll route you straight into the live clock view."
             buttonLabel="Connect Terminal"
             onSuccess={onNavItemClick}
-            className="w-full py-3 rounded-xl font-bold text-[10px] transition-all flex justify-center items-center gap-2 tracking-[0.1em] uppercase shadow-lg active:scale-95"
+            className="w-full py-3 rounded-xl font-bold text-[10px] transition-all flex justify-center items-center gap-2 tracking-widest uppercase shadow-lg active:scale-95"
             style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A0A0' }}
           />
         </div>
