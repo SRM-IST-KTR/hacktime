@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Clock, AtSign, Lock, LogIn, Users, Hash, UserPlus, ArrowRight, ShieldCheck, User, Image as ImageIcon } from 'lucide-react';
 import { PRESET_AVATARS } from '@/lib/constants';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'LOG IN' | 'CREATE' | 'GUEST'>('LOG IN');
+  const searchParams = useSearchParams();
+
+  const defaultTab = useMemo<'LOG IN' | 'CREATE' | 'GUEST'>(() => {
+    const tab = searchParams.get('tab')?.toLowerCase();
+    if (tab === 'create') return 'CREATE';
+    if (tab === 'guest') return 'GUEST';
+    return 'LOG IN';
+  }, [searchParams]);
+
+  const [activeTab, setActiveTab] = useState<'LOG IN' | 'CREATE' | 'GUEST'>(defaultTab);
 
   // Form States
   const [name, setName] = useState('');
@@ -18,16 +27,21 @@ export default function LoginPage() {
   const [teamName, setTeamName] = useState('');
   const [roomId, setRoomId] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(PRESET_AVATARS[0]);
-  
+
   // Loading & Error States
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setActiveTab(defaultTab);
+    setError('');
+  }, [defaultTab]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
+
     // --- GUEST FLOW ---
     if (activeTab === 'GUEST') {
       try {
@@ -45,12 +59,12 @@ export default function LoginPage() {
         }
 
         // Save local session to keep them connected
-        localStorage.setItem('hackclock_guest', JSON.stringify({ 
-          teamName, 
+        localStorage.setItem('hackclock_guest', JSON.stringify({
+          teamName,
           roomId: roomId.toUpperCase(),
           joinedAt: new Date().toISOString()
         }));
-        
+
         // Route directly to the clock UI
         router.push(`/room/${roomId.toUpperCase()}/clock`);
       } catch {
@@ -58,8 +72,8 @@ export default function LoginPage() {
       }
       setIsLoading(false);
       return;
-    } 
-    
+    }
+
     // --- CREATE ACCOUNT FLOW ---
     if (activeTab === 'CREATE') {
       if (password !== confirmPassword) {
@@ -72,7 +86,7 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
-      
+
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
           method: 'POST',
@@ -125,9 +139,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
-      
+
       {/* Ambient glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(93,0,255,0.08) 0%, rgba(255,46,154,0.04) 40%, transparent 70%)' }} />
+      <div className="absolute top-1/2 left-1/2 h-150 w-150 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(93,0,255,0.08) 0%, rgba(255,46,154,0.04) 40%, transparent 70%)' }} />
 
       {/* Side decorations */}
       <div className="absolute left-4 top-32 text-[10px] tracking-[0.3em] uppercase rotate-180" style={{ writingMode: 'vertical-rl', color: '#6B7280' }}>
@@ -140,21 +154,29 @@ export default function LoginPage() {
       <header className="h-16 flex justify-between items-center px-8 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(28,28,28,0.5)' }}>
         <div className="flex items-center gap-3">
           <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #5D00FF, #FF2E9A)' }}>
-             <Clock size={14} strokeWidth={3} className="text-white" />
+            <Clock size={14} strokeWidth={3} className="text-white" />
           </div>
           <h2 className="text-lg font-bold tracking-tight" style={{ color: '#E6E6E6' }}>hackTime</h2>
         </div>
         <div className="flex items-center gap-6 text-sm font-medium" style={{ color: '#A0A0A0' }}>
           <span className="cursor-pointer hover:text-white transition">Docs</span>
           <span className="cursor-pointer hover:text-white transition">Support</span>
-          <button className="text-black px-4 py-1.5 rounded font-semibold transition hover:opacity-90" style={{ backgroundColor: '#CFFF04' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('CREATE');
+              setError('');
+            }}
+            className="text-black px-4 py-1.5 rounded font-semibold transition hover:opacity-90"
+            style={{ backgroundColor: '#CFFF04' }}
+          >
             Join Platform
           </button>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-4 z-10">
-        
+
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 border shadow-lg" style={{ backgroundColor: '#1C1C1C', borderColor: 'rgba(255,255,255,0.06)' }}>
             <Clock size={24} style={{ color: '#FF2E9A' }} />
@@ -164,10 +186,10 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full max-w-md rounded-xl shadow-2xl overflow-hidden transition-all duration-300" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)' }}>
-          
+
           {error && (
             <div className="border-b p-3 text-center" style={{ backgroundColor: 'rgba(244,63,94,0.08)', borderColor: 'rgba(244,63,94,0.2)' }}>
-               <p className="text-xs font-bold tracking-wider uppercase animate-pulse" style={{ color: '#F43F5E' }}>{error}</p>
+              <p className="text-xs font-bold tracking-wider uppercase animate-pulse" style={{ color: '#F43F5E' }}>{error}</p>
             </div>
           )}
 
@@ -182,12 +204,11 @@ export default function LoginPage() {
                   setConfirmPassword('');
                   setError('');
                 }}
-                className={`flex-1 py-4 text-xs font-bold tracking-wider uppercase transition-colors border-t-2 ${
-                  activeTab === tab 
-                    ? '' 
+                className={`flex-1 py-4 text-xs font-bold tracking-wider uppercase transition-colors border-t-2 ${activeTab === tab
+                    ? ''
                     : 'hover:bg-[#1C1C1C]/50 hover:text-white'
-                }`}
-                style={activeTab === tab 
+                  }`}
+                style={activeTab === tab
                   ? { color: '#FF2E9A', backgroundColor: '#1C1C1C', borderColor: '#FF2E9A' }
                   : { color: '#A0A0A0', borderColor: 'transparent' }
                 }
@@ -198,7 +219,7 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            
+
             {activeTab === 'GUEST' && (
               <>
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300">
@@ -207,8 +228,8 @@ export default function LoginPage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Users size={16} style={{ color: '#A0A0A0' }} />
                     </div>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={teamName}
                       onChange={(e) => setTeamName(e.target.value)}
                       placeholder="e.g. The Syntax Sorcerers"
@@ -227,8 +248,8 @@ export default function LoginPage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Hash size={16} style={{ color: '#A0A0A0' }} />
                     </div>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={roomId}
                       onChange={(e) => setRoomId(e.target.value.toUpperCase())}
                       maxLength={6}
@@ -246,14 +267,14 @@ export default function LoginPage() {
 
             {(activeTab === 'LOG IN' || activeTab === 'CREATE') && (
               <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
-                
+
                 {activeTab === 'CREATE' && (
                   <>
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                       <label className="block text-[10px] font-bold mb-3 uppercase tracking-wider" style={{ color: '#A0A0A0' }}>Identity // Avatar Selection</label>
                       <div className="flex gap-3 justify-between">
                         {PRESET_AVATARS.map((avatar, index) => (
-                          <div 
+                          <div
                             key={index}
                             onClick={() => setSelectedAvatar(avatar)}
                             className="w-12 h-12 rounded-lg cursor-pointer flex items-center justify-center overflow-hidden transition-all duration-200 border-2"
@@ -263,9 +284,9 @@ export default function LoginPage() {
                               boxShadow: selectedAvatar === avatar ? '0 0 10px rgba(255,46,154,0.3)' : 'none'
                             }}
                           >
-                            <img 
-                              src={avatar} 
-                              alt={`Preset ${index + 1}`} 
+                            <img
+                              src={avatar}
+                              alt={`Preset ${index + 1}`}
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
@@ -284,8 +305,8 @@ export default function LoginPage() {
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <User size={16} style={{ color: '#A0A0A0' }} />
                         </div>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="e.g. Alex Chen"
@@ -306,8 +327,8 @@ export default function LoginPage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <AtSign size={16} style={{ color: '#A0A0A0' }} />
                     </div>
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="architect@hacktime.dev"
@@ -331,8 +352,8 @@ export default function LoginPage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Lock size={16} style={{ color: '#A0A0A0' }} />
                     </div>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
@@ -352,8 +373,8 @@ export default function LoginPage() {
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Lock size={16} style={{ color: '#A0A0A0' }} />
                       </div>
-                      <input 
-                        type="password" 
+                      <input
+                        type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
@@ -369,12 +390,12 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button 
+            <button
               type="submit"
               disabled={isLoading}
               className="w-full py-3 mt-4 rounded-md font-bold text-sm transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
-              style={{ 
-                backgroundColor: '#CFFF04', 
+              style={{
+                backgroundColor: '#CFFF04',
                 color: '#0F0F10',
                 boxShadow: '0 0 20px rgba(207,255,4,0.25)'
               }}
@@ -391,9 +412,9 @@ export default function LoginPage() {
             {activeTab !== 'GUEST' && (
               <>
                 <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}></div>
-                  <span className="flex-shrink-0 mx-4 text-[10px] font-bold tracking-wider uppercase" style={{ color: '#A0A0A0' }}>Or Authenticate Via</span>
-                  <div className="flex-grow border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}></div>
+                  <div className="grow border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}></div>
+                  <span className="shrink-0 mx-4 text-[10px] font-bold tracking-wider uppercase" style={{ color: '#A0A0A0' }}>Or Authenticate Via</span>
+                  <div className="grow border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}></div>
                 </div>
 
                 <div className="flex gap-4">
@@ -415,7 +436,7 @@ export default function LoginPage() {
 
           {activeTab !== 'GUEST' && (
             <div className="border-t p-4 flex items-center justify-center gap-2 text-[10px] font-bold tracking-wider uppercase" style={{ backgroundColor: '#0F0F10', borderColor: 'rgba(255,255,255,0.06)', color: '#10B981' }}>
-               <ShieldCheck size={14} /> End-to-end encrypted session keys active.
+              <ShieldCheck size={14} /> End-to-end encrypted session keys active.
             </div>
           )}
         </div>

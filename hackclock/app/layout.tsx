@@ -10,8 +10,56 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "hackTime",
-  description: "High-intensity hackathon timer and countdown system",
+  metadataBase: new URL("https://hacktime.githubsrmist.in"),
+  title: {
+    default: "Hackathon Control Room, Countdown Timer & Stage View",
+    template: "%s | hackTime",
+  },
+  description:
+    "Run hackathons with a synchronized control room, live countdowns, multi-phase event flows, stage screens, and six-character room codes.",
+  applicationName: "hackTime",
+  keywords: [
+    "hackathon timer",
+    "hackathon control room",
+    "stage timer",
+    "countdown clock",
+    "event flow software",
+    "hackathon software",
+    "participant room code",
+  ],
+  authors: [{ name: "GitHub Community SRMIST" }],
+  category: "productivity",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Hackathon Control Room, Countdown Timer & Stage View",
+    description:
+      "Coordinate organizers, AV teams, and participants with live countdowns, timed announcements, and shared room codes.",
+    url: "/",
+    siteName: "hackTime",
+    images: ["/og-image.JPG"],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hackathon Control Room, Countdown Timer & Stage View",
+    description:
+      "Coordinate hackathons with live countdowns, broadcast announcements, and shared room codes.",
+    images: ["/og-image.JPG"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
