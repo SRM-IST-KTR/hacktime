@@ -1,4 +1,5 @@
 const Hackathon = require('../models/dataSchema');
+const AllHackathons = require('../models/archiveSchema');
 const User = require('../models/userSchema');
 
 const deployFlow = async (req, res) => {
@@ -14,14 +15,17 @@ const deployFlow = async (req, res) => {
       phaseEndTime = new Date(Date.now() + firstPhaseDuration * 60000);
     }
 
-    const newHackathon = new Hackathon({
+    const hackathonPayload = {
       roomId, name, organizerSecret, eventStartTime, eventEndTime, timezone, branding, phases,
       status: isDraft ? 'DRAFT' : 'RUNNING', 
       currentPhaseIndex: 0, 
       phaseEndTime
-    });
+    };
 
-    await newHackathon.save();
+    await Promise.all([
+      new Hackathon(hackathonPayload).save(),
+      new AllHackathons(hackathonPayload).save()
+    ]);
     
     // Only set as active room if it's NOT a draft
     if (organizerSecret && !isDraft) {
@@ -36,7 +40,7 @@ const getAllFlows = async (req, res) => {
   try {
     const { organizerSecret } = req.query;
     if (!organizerSecret) return res.status(400).json({ error: "Missing organizerSecret." });
-    const flows = await Hackathon.find({ organizerSecret }).sort({ createdAt: -1 });
+    const flows = await Hackathon.find({ organizerSecret, isDeleted: false }).sort({ createdAt: -1 });
     res.status(200).json(flows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
@@ -45,11 +49,11 @@ const deleteFlow = async (req, res) => {
   try {
     const { roomId } = req.params;
     const { organizerSecret } = req.body;
-    const flow = await Hackathon.findOne({ roomId: roomId.toUpperCase() });
+    const flow = await Hackathon.findOne({ roomId: roomId.toUpperCase(), isDeleted: false });
     if (!flow) return res.status(404).json({ error: "Flow not found." });
     if (flow.organizerSecret !== organizerSecret) return res.status(403).json({ error: "Unauthorized." });
     
-    await Hackathon.deleteOne({ roomId: roomId.toUpperCase() });
+    await Hackathon.findByIdAndUpdate(flow._id, { isDeleted: true });
     
     // If this was the active room for the user, clear it
     await User.findOneAndUpdate({ email: organizerSecret, activeRoomId: roomId.toUpperCase() }, { activeRoomId: null });
@@ -63,7 +67,7 @@ const updateFlow = async (req, res) => {
     const { roomId } = req.params;
     const { name, organizerSecret, eventStartTime, eventEndTime, timezone, branding, phases } = req.body;
     
-    const flow = await Hackathon.findOne({ roomId: roomId.toUpperCase() });
+    const flow = await Hackathon.findOne({ roomId: roomId.toUpperCase(), isDeleted: false });
     if (!flow) return res.status(404).json({ error: "Flow not found." });
     if (flow.organizerSecret !== organizerSecret) return res.status(403).json({ error: "Unauthorized." });
 
@@ -82,7 +86,7 @@ const updateFlow = async (req, res) => {
 const getRoomData = async (req, res) => {
   try {
     const { roomId } = req.params;
-    const hackathon = await Hackathon.findOne({ roomId: roomId.toUpperCase() });
+    const hackathon = await Hackathon.findOne({ roomId: roomId.toUpperCase(), isDeleted: false });
     if (!hackathon) return res.status(404).json({ error: "Room not found." });
     res.status(200).json(hackathon);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -93,7 +97,7 @@ const updateRoomState = async (req, res) => {
     const { roomId } = req.params;
     const { action, organizerSecret, announcementText, announcementDuration } = req.body;
     
-    const room = await Hackathon.findOne({ roomId: roomId.toUpperCase() });
+    const room = await Hackathon.findOne({ roomId: roomId.toUpperCase(), isDeleted: false });
     if (!room) return res.status(404).json({ error: "Room not found." });
     if (room.organizerSecret !== organizerSecret) return res.status(403).json({ error: "SECURITY FAULT: Unauthorized." });
 
@@ -147,7 +151,7 @@ const joinRoom = async (req, res) => {
   try {
     const { roomId } = req.params;
     const { teamName } = req.body;
-    const room = await Hackathon.findOne({ roomId: roomId.toUpperCase() });
+    const room = await Hackathon.findOne({ roomId: roomId.toUpperCase(), isDeleted: false });
     if (!room) return res.status(404).json({ error: "Room not found." });
     if (!room.participants.some(p => p.teamName === teamName)) {
        room.participants.push({ teamName });

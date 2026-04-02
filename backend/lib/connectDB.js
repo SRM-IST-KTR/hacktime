@@ -21,7 +21,7 @@ async function connectDB() {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(mongoURI).then((mongooseInstance) => {
+    cached.promise = mongoose.connect(mongoURI, { dbName: 'HackTime' }).then((mongooseInstance) => {
       console.log('MongoDB Secure Cluster Connection Established');
       return mongooseInstance;
     });
