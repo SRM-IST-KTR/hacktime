@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   description:
     "Run hackathons with a synchronized control room, live countdowns, multi-phase event flows, stage screens, and six-character room codes.",
   applicationName: "hackTime",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/logo.svg",
+  },
   keywords: [
     "hackathon timer",
     "hackathon control room",
@@ -27,7 +32,9 @@ export const metadata: Metadata = {
     "hackathon software",
     "participant room code",
   ],
-  authors: [{ name: "GitHub Community SRMIST" }],
+  authors: [{ name: "GitHub Community SRM", url: "https://githubsrmist.in" }],
+  creator: "GitHub Community SRM",
+  publisher: "GitHub Community SRM",
   category: "productivity",
   alternates: {
     canonical: "/",
@@ -38,7 +45,14 @@ export const metadata: Metadata = {
       "Coordinate organizers, AV teams, and participants with live countdowns, timed announcements, and shared room codes.",
     url: "/",
     siteName: "hackTime",
-    images: ["/og-image.JPG"],
+    images: [
+      {
+        url: "/og-image.JPG",
+        width: 1200,
+        height: 630,
+        alt: "hackTime Open Graph social frame",
+      },
+    ],
     locale: "en_US",
     type: "website",
   },
