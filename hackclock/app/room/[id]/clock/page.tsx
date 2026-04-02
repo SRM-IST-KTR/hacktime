@@ -180,7 +180,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
   }
 
   const currentPhase = eventData.phases[eventData.currentPhaseIndex] || {};
-  const accent = eventData.branding?.accentColor || '#FF2E9A';
+  const accent = eventData.branding?.accentColor || '#FF2E9A'; // it was ff2e9a
 
   return (
     <div className="flex flex-col lg:flex-row h-screen overflow-hidden relative" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
@@ -234,7 +234,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
           <div 
             className="rounded-[20px] p-10 md:p-20 relative overflow-hidden flex flex-col items-center justify-center min-h-[400px] md:min-h-[500px] transition-all group"
             style={{ 
-              background: 'linear-gradient(135deg, rgba(93,0,255,0.15) 0%, rgba(255,46,154,0.1) 100%)',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
               border: '1px solid rgba(255,46,154,0.12)',
               boxShadow: '0 64px 128px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)'
             }}
