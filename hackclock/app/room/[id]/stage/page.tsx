@@ -20,10 +20,6 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   const [history, setHistory] = useState<string[]>([]);
   const announcementDurationRef = useRef(10);
 
-  const [showHistory, setShowHistory] = useState(false);
-  const [history, setHistory] = useState<string[]>([]);
-  const announcementDurationRef = useRef(10);
-
   useEffect(() => {
     params.then(p => setRoomId(p.id));
   }, [params]);
