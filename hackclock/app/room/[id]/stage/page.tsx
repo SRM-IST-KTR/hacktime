@@ -15,6 +15,10 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [lastAnnouncementTime, setLastAnnouncementTime] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
+  const announcementDurationRef = useRef(10);
 
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
