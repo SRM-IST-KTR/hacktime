@@ -4,6 +4,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { NextAuthOptions, Session } from "next-auth";
 import { JWT } from "next-auth/jwt";
 
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").trim().replace(/^['"]|['"]$/g, "");
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
@@ -22,7 +24,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+          const res = await fetch(`${apiBaseUrl}/api/auth/login`, {
             method: 'POST',
             body: JSON.stringify({
               email: credentials.email,

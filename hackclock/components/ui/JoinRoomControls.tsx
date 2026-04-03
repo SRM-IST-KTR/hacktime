@@ -98,7 +98,7 @@ export default function JoinRoomControls({
           placeholder="EX: AB12CD"
           autoCapitalize="characters"
           autoCorrect="off"
-          className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 sm:px-5 py-3.5 sm:py-4 text-sm font-mono tracking-[0.12em] sm:tracking-[0.25em] text-white uppercase outline-none transition-all focus:border-blue-500/50 focus:bg-black/40"
+          className="w-full rounded-none border border-white/10 bg-black/20 px-4 py-3.5 text-sm font-mono tracking-[0.12em] text-white uppercase outline-none transition-all focus:border-[#FF2E9A]/50 focus:bg-black/40 sm:px-5 sm:py-4 sm:tracking-[0.25em]"
         />
       </div>
 
@@ -109,7 +109,7 @@ export default function JoinRoomControls({
       <button
         type="submit"
         disabled={isJoining}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-bold uppercase tracking-[0.16em] sm:tracking-[0.2em] text-white transition-all hover:bg-blue-500 disabled:opacity-60"
+        className="w-full inline-flex cursor-pointer items-center justify-center gap-2 rounded-none border border-[#CFFF04] bg-[#CFFF04] px-6 py-3.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0F0F10] transition-all hover:border-[#b8e503] hover:bg-[#b8e503] sm:py-4 sm:text-xs sm:tracking-[0.2em] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isJoining ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
         {isJoining ? "Joining..." : buttonLabel}
@@ -122,10 +122,10 @@ export default function JoinRoomControls({
       <>
         <button
           onClick={() => setIsOpen(true)}
-          className={className || "w-full py-3 rounded-xl font-bold text-[10px] transition-all flex justify-center items-center gap-2 tracking-[0.1em] uppercase shadow-lg active:scale-95"}
-          style={style || { backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A0A0' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#E6E6E6'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = style?.backgroundColor as string || 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = style?.color as string || '#A0A0A0'; }}
+          className={className || "w-full cursor-pointer py-3 rounded-none border font-bold text-[10px] transition-all flex justify-center items-center gap-2 tracking-[0.1em] uppercase shadow-lg active:scale-95"}
+          style={style || { backgroundColor: 'rgba(255,46,154,0.08)', border: '1px solid #FF2E9A', color: '#FF2E9A' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,46,154,0.12)'; e.currentTarget.style.color = '#E6E6E6'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = style?.backgroundColor as string || 'rgba(255,46,154,0.08)'; e.currentTarget.style.color = style?.color as string || '#FF2E9A'; }}
         >
           {buttonLabel}
         </button>

@@ -73,6 +73,7 @@ body {
 
 /* ─── Base Interactive Elements ─── */
 button, [role="button"], a {
+  cursor: pointer;
   transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out), background-color 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
+import { io, Socket } from 'socket.io-client';
 import Sidebar from '@/components/ui/Sidebar';
 import { Megaphone, X, Menu, Clock as ClockIcon, Activity, History } from 'lucide-react';
 
@@ -25,10 +26,38 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const announcementDurationRef = useRef(10);
+  const presenceSocketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     params.then(p => setRoomId(p.id));
   }, [params]);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const guestData = localStorage.getItem('hackclock_guest');
+    if (!guestData) return;
+
+    const parsedGuest = JSON.parse(guestData);
+    if (parsedGuest.roomId !== roomId) return;
+
+    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
+    presenceSocketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join-room', {
+        roomId,
+        teamName: parsedGuest.teamName,
+        role: 'terminal',
+      });
+    });
+
+    return () => {
+      socket.emit('leave-room', roomId);
+      socket.disconnect();
+      presenceSocketRef.current = null;
+    };
+  }, [roomId]);
 
   const { data: eventData } = useSWR(
     roomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}` : null, 
