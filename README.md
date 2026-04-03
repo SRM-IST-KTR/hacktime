@@ -1,4 +1,10 @@
 # hackTime
+<p align="center">
+   <img src="hackclock/public/PRIMARY-LOGO.svg" alt="hackTime primary logo" width="340" />
+</p>
+
+<p align="center"><strong>Hackathon Control Room for Organizers, Stage Screens, and Participants</strong></p>
+
 
 hackTime is a hackathon control room for organizers, stage screens, and participants. It lets you create a timed event flow, launch a live countdown, broadcast announcements, and share a room code so teams can join the clock view instantly.
 
@@ -160,6 +166,15 @@ Check that:
 - the room ID is correct
 - the hackathon was deployed, not just saved as a draft
 - the backend database contains the room record
+
+## Brand Logos
+
+<p>
+   <img src="hackclock/public/PRIMARY-LOGO.svg" alt="Primary logo" width="180" />
+   <img src="hackclock/public/WHITE-ON-BLACK-LOGO.svg" alt="White on black logo" width="180" />
+   <img src="hackclock/public/BLACK-ON-WHITE-LOGO.svg" alt="Black on white logo" width="180" />
+</p>
+
 
 ## License
 
