@@ -39,12 +39,13 @@ export default function DashboardPage() {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [liveParticipants, setLiveParticipants] = useState<Participant[] | null>(null);
+  const [controlActionInFlight, setControlActionInFlight] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   // Modal State
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
-    type: 'DELETE' | 'STOP' | 'NEXT_PHASE';
+    type: 'DELETE' | 'STOP' | 'NEXT_PHASE' | 'RECALCULATE';
     roomId: string;
     flowName: string;
   }>({
@@ -133,7 +134,7 @@ export default function DashboardPage() {
     setLiveParticipants(activeControlEvent?.participants || []);
   }, [activeControlEvent?.participants, activeRoomId, liveParticipants]);
 
-  const openConfirmModal = (type: 'DELETE' | 'STOP' | 'NEXT_PHASE', roomId: string, flowName: string) => {
+  const openConfirmModal = (type: 'DELETE' | 'STOP' | 'NEXT_PHASE' | 'RECALCULATE', roomId: string, flowName: string) => {
     setConfirmModal({ isOpen: true, type, roomId, flowName });
   };
 
@@ -147,11 +148,17 @@ export default function DashboardPage() {
       await engineControlExecution(roomId, 'STOP');
     } else if (type === 'NEXT_PHASE') {
       await engineControlExecution(roomId, 'NEXT_PHASE');
+    } else if (type === 'RECALCULATE') {
+      await engineControlExecution(roomId, 'RECALCULATE');
     }
   };
 
-  const engineControlExecution = async (roomId: string, action: 'PAUSE' | 'RESUME' | 'NEXT_PHASE' | 'STOP') => {
+  const engineControlExecution = async (roomId: string, action: 'PAUSE' | 'RESUME' | 'NEXT_PHASE' | 'STOP' | 'RECALCULATE') => {
     if (!userEmail) return;
+    const lockKey = `${roomId}:${action}`;
+    if (controlActionInFlight) return;
+
+    setControlActionInFlight(lockKey);
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}/state`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -163,6 +170,7 @@ export default function DashboardPage() {
         await update({ activeRoomId: null });
       }
     } catch { alert("System Error: Could not connect to Master Node."); }
+    finally { setControlActionInFlight(null); }
   };
 
   const deleteFlowExecution = async (roomId: string) => {
@@ -311,6 +319,7 @@ export default function DashboardPage() {
                 <div className="flex gap-4 mt-8">
                   {flow.status === 'RUNNING' ? (
                     <button
+                      disabled={Boolean(controlActionInFlight)}
                       onClick={() => engineControlExecution(flow.roomId, 'PAUSE')}
                       className="cursor-pointer flex-1 py-3 rounded-[20px] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
                       style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
@@ -319,6 +328,7 @@ export default function DashboardPage() {
                     </button>
                   ) : (
                     <button
+                      disabled={Boolean(controlActionInFlight)}
                       onClick={() => engineControlExecution(flow.roomId, 'RESUME')}
                       className="cursor-pointer flex-1 py-3 rounded-[20px] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
                       style={{ backgroundColor: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)', color: '#10B981' }}
@@ -327,6 +337,7 @@ export default function DashboardPage() {
                     </button>
                   )}
                   <button
+                    disabled={Boolean(controlActionInFlight)}
                     onClick={() => openConfirmModal('NEXT_PHASE', flow.roomId, flow.name)}
                     className="cursor-pointer flex-1 py-3 rounded-[20px] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
                     style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
@@ -334,6 +345,7 @@ export default function DashboardPage() {
                     <FastForward size={14} /> Next
                   </button>
                   <button
+                    disabled={Boolean(controlActionInFlight)}
                     onClick={() => openConfirmModal('STOP', flow.roomId, flow.name)}
                     className="cursor-pointer p-3 rounded-[20px] transition-all hover:text-[#F43F5E]"
                     style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A0A0' }}
@@ -386,6 +398,14 @@ export default function DashboardPage() {
                 style={{ backgroundColor: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.15)', color: '#F43F5E' }}
               >
                 <XCircle size={14} /> Disconnect Terminal
+              </button>
+              <button
+                disabled={Boolean(controlActionInFlight)}
+                onClick={() => openConfirmModal('RECALCULATE', activeControlEvent.roomId, activeControlEvent.name)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#F59E0B' }}
+              >
+                <RefreshCw size={14} /> Reset Phase
               </button>
             </div>
 
@@ -643,7 +663,9 @@ export default function DashboardPage() {
               ? `Proceeding will permanently erase "${confirmModal.flowName}" from the central database. This action cannot be undone.`
               : confirmModal.type === 'STOP'
                 ? `The session for "${confirmModal.flowName}" will be terminated and archived. All terminal links will be severed.`
-                : `You are forcing a phase transition for "${confirmModal.flowName}". Active terminal clocks will be synchronized immediately.`}
+                : confirmModal.type === 'RECALCULATE'
+                  ? `This will reset the current phase for "${confirmModal.flowName}" and rebuild its timer baseline from the phase duration.`
+                  : `You are forcing a phase transition for "${confirmModal.flowName}". Active terminal clocks will be synchronized immediately.`}
           </p>
         </div>
       </Modal>

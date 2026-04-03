@@ -23,14 +23,22 @@ const syncArchiveByRoomId = async (roomId, updatePayload) => {
   return archivedHackathon;
 };
 
+const NEXT_PHASE_DEBOUNCE_MS = 1200;
+
+const getCurrentPhaseDurationMs = (room) => {
+  const currentPhase = room?.phases?.[room.currentPhaseIndex];
+  const minutes = currentPhase?.durationMinutes || 0;
+  return minutes > 0 ? minutes * 60000 : 0;
+};
+
 const deployFlow = async (req, res) => {
   try {
     const { name, organizerSecret, eventStartTime, eventEndTime, timezone, branding, phases, status } = req.body;
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    
+
     const isDraft = status === 'DRAFT';
     let phaseEndTime = null;
-    
+
     if (!isDraft) {
       const firstPhaseDuration = phases[0]?.durationMinutes || 60;
       phaseEndTime = new Date(Date.now() + firstPhaseDuration * 60000);
@@ -38,8 +46,8 @@ const deployFlow = async (req, res) => {
 
     const hackathonPayload = {
       roomId, name, organizerSecret, eventStartTime, eventEndTime, timezone, branding, phases,
-      status: isDraft ? 'DRAFT' : 'RUNNING', 
-      currentPhaseIndex: 0, 
+      status: isDraft ? 'DRAFT' : 'RUNNING',
+      currentPhaseIndex: 0,
       phaseEndTime
     };
 
@@ -47,12 +55,12 @@ const deployFlow = async (req, res) => {
       new Hackathon(hackathonPayload).save(),
       new AllHackathons(hackathonPayload).save()
     ]);
-    
+
     // Only set as active room if it's NOT a draft
     if (organizerSecret && !isDraft) {
       await User.findOneAndUpdate({ email: organizerSecret }, { activeRoomId: roomId });
     }
-    
+
     res.status(201).json({ roomId, message: isDraft ? "Draft saved successfully." : "Flow deployed successfully." });
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
@@ -82,10 +90,10 @@ const deleteFlow = async (req, res) => {
       ),
       syncArchiveByRoomId(normalizedRoomId, { isDeleted: true })
     ]);
-    
+
     // If this was the active room for the user, clear it
     await User.findOneAndUpdate({ email: organizerSecret, activeRoomId: normalizedRoomId }, { activeRoomId: null });
-    
+
     res.status(200).json({ message: "Flow deleted successfully." });
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
@@ -94,7 +102,7 @@ const updateFlow = async (req, res) => {
   try {
     const normalizedRoomId = req.params.roomId.toUpperCase();
     const { name, organizerSecret, eventStartTime, eventEndTime, timezone, branding, phases } = req.body;
-    
+
     const flow = await Hackathon.findOne({ roomId: normalizedRoomId, isDeleted: false });
     if (!flow) return res.status(404).json({ error: "Flow not found." });
     if (flow.organizerSecret !== organizerSecret) return res.status(403).json({ error: "Unauthorized." });
@@ -107,6 +115,20 @@ const updateFlow = async (req, res) => {
       branding: branding || flow.branding,
       phases: phases || flow.phases
     };
+
+    // If the active phase duration is edited, refresh the active timer baseline.
+    if (phases && Array.isArray(phases) && phases[flow.currentPhaseIndex]) {
+      const updatedCurrentPhase = phases[flow.currentPhaseIndex];
+      const nextDurationMs = (updatedCurrentPhase.durationMinutes || 0) * 60000;
+
+      if (nextDurationMs > 0 && flow.status === 'RUNNING') {
+        updatePayload.phaseEndTime = new Date(Date.now() + nextDurationMs);
+      }
+
+      if (nextDurationMs > 0 && flow.status === 'PAUSED') {
+        updatePayload.pausedRemainingMs = nextDurationMs;
+      }
+    }
 
     const [updatedFlow] = await Promise.all([
       Hackathon.findOneAndUpdate(
@@ -134,16 +156,28 @@ const updateRoomState = async (req, res) => {
   try {
     const { roomId } = req.params;
     const { action, organizerSecret, announcementText, announcementDuration } = req.body;
-    
+
     const room = await Hackathon.findOne({ roomId: roomId.toUpperCase(), isDeleted: false });
     if (!room) return res.status(404).json({ error: "Room not found." });
     if (room.organizerSecret !== organizerSecret) return res.status(403).json({ error: "SECURITY FAULT: Unauthorized." });
 
+    if (action === 'NEXT_PHASE') {
+      const now = Date.now();
+      const lastActionAt = room.lastControlActionAt ? room.lastControlActionAt.getTime() : 0;
+      const isRapidDuplicate = room.lastControlAction === 'NEXT_PHASE' && now - lastActionAt < NEXT_PHASE_DEBOUNCE_MS;
+
+      if (isRapidDuplicate) {
+        return res.status(429).json({ error: 'Duplicate NEXT_PHASE request ignored. Please wait and retry.' });
+      }
+    }
+
     if (action === 'PAUSE' && room.status === 'RUNNING') {
-      room.pausedRemainingMs = room.phaseEndTime.getTime() - Date.now();
+      const fallbackDurationMs = getCurrentPhaseDurationMs(room);
+      const phaseDistance = room.phaseEndTime ? room.phaseEndTime.getTime() - Date.now() : 0;
+      room.pausedRemainingMs = phaseDistance > 0 ? phaseDistance : fallbackDurationMs;
       room.phaseEndTime = null;
       room.status = 'PAUSED';
-    } 
+    }
     else if (action === 'RESUME' && (room.status === 'PAUSED' || room.status === 'DRAFT')) {
       if (room.status === 'DRAFT') {
         const duration = room.phases[room.currentPhaseIndex]?.durationMinutes || 60;
@@ -151,11 +185,13 @@ const updateRoomState = async (req, res) => {
         // Also update the user's activeRoomId if it's their first time launching
         await User.findOneAndUpdate({ email: organizerSecret }, { activeRoomId: roomId.toUpperCase() });
       } else {
-        room.phaseEndTime = new Date(Date.now() + room.pausedRemainingMs);
+        const fallbackDurationMs = getCurrentPhaseDurationMs(room);
+        const resumeDurationMs = room.pausedRemainingMs > 0 ? room.pausedRemainingMs : fallbackDurationMs;
+        room.phaseEndTime = new Date(Date.now() + resumeDurationMs);
       }
       room.pausedRemainingMs = null;
       room.status = 'RUNNING';
-    } 
+    }
     else if (action === 'NEXT_PHASE') {
       room.currentPhaseIndex += 1;
       if (room.currentPhaseIndex >= room.phases.length) {
@@ -179,6 +215,32 @@ const updateRoomState = async (req, res) => {
       room.announcementDuration = announcementDuration || 10;
       room.announcementTimestamp = new Date(); // Logs the exact moment of broadcast
     }
+    else if (action === 'RECALCULATE') {
+      const fallbackDurationMs = getCurrentPhaseDurationMs(room);
+
+      if (!fallbackDurationMs) {
+        return res.status(400).json({ error: 'Cannot recalculate timer for an empty or invalid current phase.' });
+      }
+
+      if (room.status === 'RUNNING') {
+        room.phaseEndTime = new Date(Date.now() + fallbackDurationMs);
+        room.pausedRemainingMs = null;
+      } else if (room.status === 'PAUSED') {
+        room.pausedRemainingMs = fallbackDurationMs;
+        room.phaseEndTime = null;
+      } else if (room.status === 'DRAFT') {
+        room.pausedRemainingMs = fallbackDurationMs;
+        room.phaseEndTime = null;
+        room.status = 'PAUSED';
+      } else {
+        return res.status(400).json({ error: 'Cannot recalculate timer for a completed room.' });
+      }
+    }
+
+    if (['PAUSE', 'RESUME', 'NEXT_PHASE', 'STOP', 'ANNOUNCE', 'RECALCULATE'].includes(action)) {
+      room.lastControlAction = action;
+      room.lastControlActionAt = new Date();
+    }
 
     await room.save();
     await syncArchiveByRoomId(room.roomId, buildArchivePayload(room));
@@ -193,9 +255,9 @@ const joinRoom = async (req, res) => {
     const room = await Hackathon.findOne({ roomId: roomId.toUpperCase(), isDeleted: false });
     if (!room) return res.status(404).json({ error: "Room not found." });
     if (!room.participants.some(p => p.teamName === teamName)) {
-       room.participants.push({ teamName });
-       await room.save();
-       await syncArchiveByRoomId(room.roomId, buildArchivePayload(room));
+      room.participants.push({ teamName });
+      await room.save();
+      await syncArchiveByRoomId(room.roomId, buildArchivePayload(room));
     }
     res.status(200).json({ message: "Joined successfully" });
   } catch (err) { res.status(500).json({ error: err.message }); }

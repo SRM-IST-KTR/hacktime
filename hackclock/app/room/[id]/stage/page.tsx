@@ -136,7 +136,20 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
 
   useEffect(() => {
     if (!eventData) return;
-    if (eventData.status === 'PAUSED' && eventData.pausedRemainingMs) {
+    if (eventData.status === 'PAUSED') {
+      if (!eventData.pausedRemainingMs || eventData.pausedRemainingMs <= 0) {
+        const phaseDurationMinutes = eventData.phases?.[eventData.currentPhaseIndex]?.durationMinutes || 0;
+        const fallbackDistance = phaseDurationMinutes > 0 ? phaseDurationMinutes * 60000 : 0;
+        const timeout = setTimeout(() => {
+          setTimeLeft({
+            hours: Math.floor((fallbackDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+            minutes: Math.floor((fallbackDistance % (1000 * 60 * 60)) / (1000 * 60)),
+            seconds: Math.floor((fallbackDistance % (1000 * 60)) / 1000)
+          });
+        }, 0);
+        return () => clearTimeout(timeout);
+      }
+
       const distance = eventData.pausedRemainingMs;
       const timeout = setTimeout(() => {
         setTimeLeft({

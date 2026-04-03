@@ -60,11 +60,11 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
   }, [roomId]);
 
   const { data: eventData } = useSWR(
-    roomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}` : null, 
-    fetcher, 
-    { 
+    roomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}` : null,
+    fetcher,
+    {
       refreshInterval: 3000,
-      keepPreviousData: true 
+      keepPreviousData: true
     }
   );
 
@@ -90,7 +90,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
     if (!eventData || !roomId) return;
 
     const currentTS = eventData.announcementTimestamp;
-    
+
     if (isInitialLoad) {
       if (!lastAnnouncementTime && currentTS) {
         const timeout = setTimeout(() => {
@@ -110,7 +110,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
         setLastAnnouncementTime(currentTS);
         localStorage.setItem(`last_broadcast_${roomId}`, currentTS);
       }, 0);
-      
+
       if (eventData.announcement) {
         const historyTimeout = setTimeout(() => {
           setHistory(prev => {
@@ -145,7 +145,20 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
   // Normal Clock Logic
   useEffect(() => {
     if (!eventData) return;
-    if (eventData.status === 'PAUSED' && eventData.pausedRemainingMs) {
+    if (eventData.status === 'PAUSED') {
+      if (!eventData.pausedRemainingMs || eventData.pausedRemainingMs <= 0) {
+        const phaseDurationMinutes = eventData.phases?.[eventData.currentPhaseIndex]?.durationMinutes || 0;
+        const fallbackDistance = phaseDurationMinutes > 0 ? phaseDurationMinutes * 60000 : 0;
+        const timeout = setTimeout(() => {
+          setTimeLeft({
+            hours: Math.floor((fallbackDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+            minutes: Math.floor((fallbackDistance % (1000 * 60 * 60)) / (1000 * 60)),
+            seconds: Math.floor((fallbackDistance % (1000 * 60)) / 1000)
+          });
+        }, 0);
+        return () => clearTimeout(timeout);
+      }
+
       const distance = eventData.pausedRemainingMs;
       const timeout = setTimeout(() => {
         setTimeLeft({
@@ -154,7 +167,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
           seconds: Math.floor((distance % (1000 * 60)) / 1000)
         });
       }, 0);
-      return () => clearTimeout(timeout); 
+      return () => clearTimeout(timeout);
     }
     if (!eventData.phaseEndTime || eventData.status !== 'RUNNING') {
       if (eventData.status === 'COMPLETED' || eventData.status === 'DRAFT') {
@@ -176,13 +189,13 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
         seconds: Math.floor((distance % (1000 * 60)) / 1000)
       });
     };
-    updateTimer(); 
+    updateTimer();
     const timer = setInterval(updateTimer, 1000);
     return () => clearInterval(timer);
   }, [eventData]);
 
   const formatTime = (time: number) => Math.max(0, time).toString().padStart(2, '0');
-  
+
   if (!eventData || eventData.error || !eventData.phases) {
     return (
       <div className="flex flex-col min-h-screen items-center justify-center p-6" style={{ backgroundColor: '#0F0F10' }}>
@@ -196,8 +209,8 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
           <p className="text-lg font-medium leading-relaxed mb-12" style={{ color: '#A0A0A0' }}>
             The clock terminal you are attempting to link with does not exist or has been decommissioned.
           </p>
-          <Link 
-            href="/dashboard" 
+          <Link
+            href="/dashboard"
             className="px-8 py-4 rounded-[20px] font-bold text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-2"
             style={{ backgroundColor: '#CFFF04', color: '#0F0F10' }}
           >
@@ -214,8 +227,8 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
   return (
     <div className="flex flex-col lg:flex-row h-screen overflow-hidden relative" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
       {/* Mobile Toggle */}
-      <button 
-        onClick={() => setIsSidebarOpen(true)} 
+      <button
+        onClick={() => setIsSidebarOpen(true)}
         className="lg:hidden absolute top-6 left-6 z-30 p-3 glass rounded-[20px] active:scale-95 transition-all"
         style={{ color: '#A0A0A0' }}
       >
@@ -236,7 +249,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
       <main className="flex-1 flex flex-col overflow-y-auto min-w-0 stagger-in">
         {/* Top Header / Announcement Bar */}
         <header className="h-20 flex justify-between items-center px-8 backdrop-blur-xl shrink-0 z-10" style={{ backgroundColor: 'rgba(15,15,16,0.8)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-          <div 
+          <div
             className="flex items-center gap-4 overflow-hidden group cursor-pointer"
             onClick={() => setShowHistory(true)}
           >
@@ -250,19 +263,19 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
               </span>
             </div>
           </div>
-          
+
           <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-[20px]" style={{ backgroundColor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
-               <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#10B981' }}></div>
-               <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#10B981' }}>Live</span>
+            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#10B981' }}></div>
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#10B981' }}>Live</span>
           </div>
         </header>
 
         <div className="p-6 md:p-12 max-w-7xl mx-auto w-full space-y-12">
-          
+
           {/* THE CLOCK — HERO COMPONENT with gradient background per brand §7.1 */}
-          <div 
+          <div
             className="rounded-[20px] p-10 md:p-20 relative overflow-hidden flex flex-col items-center justify-center min-h-[400px] md:min-h-[500px] transition-all group"
-            style={{ 
+            style={{
               background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
               border: '1px solid rgba(255,46,154,0.12)',
               boxShadow: '0 64px 128px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)'
@@ -273,8 +286,8 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
 
             {/* Status Badge */}
             <div className="absolute top-8 md:top-12 flex flex-col items-center gap-3">
-              <span 
-                className="px-4 py-1.5 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase transition-all" 
+              <span
+                className="px-4 py-1.5 rounded-full text-[10px] font-bold tracking-[0.2em] uppercase transition-all"
                 style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: `1px solid ${accent}30`, color: accent, boxShadow: `0 0 20px ${accent}15` }}
               >
                 {eventData.status}
@@ -311,15 +324,15 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
                 const isPast = index < eventData.currentPhaseIndex;
                 const isCurrent = index === eventData.currentPhaseIndex;
                 const isNext = index === eventData.currentPhaseIndex + 1;
-                
+
                 return (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`flex-1 min-w-[280px] rounded-[24px] p-8 transition-all duration-500 relative overflow-hidden ${isPast ? 'opacity-30 grayscale' : 'opacity-100'}`}
-                    style={{ 
+                    style={{
                       backgroundColor: '#1C1C1C',
-                      border: isCurrent 
-                        ? `1.5px solid ${accent}` 
+                      border: isCurrent
+                        ? `1.5px solid ${accent}`
                         : '1.5px solid rgba(255,255,255,0.06)',
                       boxShadow: isCurrent ? `0 0 30px ${accent}15` : 'none'
                     }}
@@ -360,11 +373,11 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
 
       {/* History Overlay */}
       {showHistory && (
-        <div 
+        <div
           className="absolute inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300"
           onClick={() => setShowHistory(false)}
         >
-          <div 
+          <div
             className="w-full max-w-xl overflow-hidden shadow-[0_64px_128px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300"
             style={{ backgroundColor: 'rgba(28,28,28,0.95)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.08)' }}
             onClick={(e) => e.stopPropagation()}
@@ -381,8 +394,8 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
             <div className="max-h-[60vh] overflow-y-auto p-6 space-y-4 custom-scrollbar">
               {history.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 opacity-30 text-center">
-                   <Megaphone size={48} className="mb-4" />
-                   <p className="text-sm font-bold uppercase tracking-widest">No transmissions captured.</p>
+                  <Megaphone size={48} className="mb-4" />
+                  <p className="text-sm font-bold uppercase tracking-widest">No transmissions captured.</p>
                 </div>
               ) : (
                 history.map((item, i) => (
@@ -398,33 +411,33 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
 
       {/* Announcement Overlay */}
       {showAnnouncement && (
-        <div 
-          className="absolute inset-0 z-[100] flex items-center justify-center backdrop-blur-2xl cursor-pointer p-12 overflow-hidden" 
+        <div
+          className="absolute inset-0 z-[100] flex items-center justify-center backdrop-blur-2xl cursor-pointer p-12 overflow-hidden"
           style={{ backgroundColor: 'rgba(15,15,16,0.95)' }}
           onClick={() => setShowAnnouncement(false)}
         >
-          <div 
+          <div
             className="absolute inset-0 opacity-20 pointer-events-none"
             style={{ background: `radial-gradient(circle at center, ${accent} 0%, transparent 70%)` }}
           />
-          
+
           <div className="relative max-w-6xl w-full text-center animate-in fade-in zoom-in slide-in-from-bottom-12 duration-700 ease-out">
-            <button 
-              onClick={(e) => { e.stopPropagation(); setShowAnnouncement(false); }} 
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowAnnouncement(false); }}
               className="absolute -top-20 right-0 md:top-0 md:right-0 p-4 glass rounded-[20px] hover:text-white active:scale-90 transition-all"
               style={{ color: '#A0A0A0' }}
             >
               <X size={32} />
             </button>
-            
+
             <div className="mb-12 inline-block p-6 rounded-[20px] shadow-2xl animate-bounce" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <Megaphone size={64} className="md:size-[80px]" style={{ color: accent }} />
             </div>
-            
+
             <h1 className="text-5xl md:text-7xl lg:text-[9rem] font-black tracking-tighter leading-[0.9] drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] break-words mb-12" style={{ color: '#E6E6E6' }}>
               {eventData.announcement}
             </h1>
-            
+
             <div className="flex flex-col items-center gap-4">
               <div className="w-24 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
                 <div className="h-full animate-progress origin-left" style={{ backgroundColor: '#E6E6E6' }}></div>
