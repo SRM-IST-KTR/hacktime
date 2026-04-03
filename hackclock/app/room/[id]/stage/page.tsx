@@ -15,7 +15,7 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [lastAnnouncementTime, setLastAnnouncementTime] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
+
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const announcementDurationRef = useRef(10);
@@ -139,7 +139,7 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
 
   if (!eventData || eventData.error || !eventData.phases) {
     return (
-      <div className="flex flex-col min-h-screen items-center justify-center p-6" style={{ backgroundColor: '#0F0F10' }}>
+      <div className="flex flex-col min-h-dvh items-center justify-center p-4 md:p-6" style={{ backgroundColor: '#0F0F10' }}>
         <div className="glass rounded-[20px] p-12 md:p-16 max-w-xl w-full text-center shadow-2xl relative z-10 overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="inline-flex p-5 rounded-[20px] mb-10 shadow-2xl" style={{ backgroundColor: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.15)' }}>
             <X size={40} style={{ color: '#F43F5E' }} />
@@ -167,9 +167,9 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   const accent = eventData.branding?.accentColor || '#FF2E9A';
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden font-sans relative" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
-      <header className="h-20 md:h-24 px-6 md:px-12 flex justify-between items-center shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <div className="flex items-center gap-4 md:gap-6">
+    <div className="min-h-dvh w-full flex flex-col overflow-x-hidden font-sans relative" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
+      <header className="px-4 py-3 md:px-12 md:h-24 flex flex-wrap md:flex-nowrap justify-between items-start md:items-center gap-3 md:gap-0 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div className="flex min-w-0 items-center gap-3 md:gap-6">
           <Link href="/dashboard" className="cursor-pointer group">
             {eventData.branding?.logoUrl ? (
               <div className="h-10 md:h-14 rounded-xl flex items-center justify-center px-3 md:px-4 transition-colors" style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -177,17 +177,17 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
               </div>
             ) : (
               <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-colors" style={{ background: 'linear-gradient(135deg, #5D00FF, #FF2E9A)', boxShadow: `0 0 20px ${accent}30` }}>
-                <Terminal size={24} className="md:size-[32px]" style={{ color: '#0F0F10' }} strokeWidth={2.5} />
+                <Terminal size={24} className="md:size-8" style={{ color: '#0F0F10' }} strokeWidth={2.5} />
               </div>
             )}
           </Link>
-          <div>
-            <h1 className="text-xl md:text-3xl font-black tracking-tight leading-none mb-1 truncate max-w-[150px] sm:max-w-none" style={{ color: '#E6E6E6' }}>{eventData.name}</h1>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl md:text-3xl font-black tracking-tight leading-none mb-1 truncate max-w-[55vw] sm:max-w-[60vw] md:max-w-none" style={{ color: '#E6E6E6' }}>{eventData.name}</h1>
             <p className="text-[9px] md:text-[11px] font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase" style={{ color: '#FF2E9A' }}>Stage Broadcast Mode</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 md:gap-12">
+        <div className="flex items-center gap-4 md:gap-12 ml-auto md:ml-0">
           <div className="text-right">
             <p className="text-[8px] md:text-[10px] font-bold tracking-[0.2em] uppercase mb-1" style={{ color: '#6B7280' }}>Status</p>
             <p className={`text-xs md:text-sm font-bold flex items-center gap-2 justify-end ${eventData.status !== 'RUNNING' ? 'animate-pulse' : ''}`} style={{ color: eventData.status === 'RUNNING' ? '#E6E6E6' : '#F43F5E' }}>
@@ -198,15 +198,15 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center relative p-6">
+      <main className="flex-1 min-h-0 flex flex-col items-center justify-center relative px-4 py-5 md:p-6 overflow-y-auto">
         {/* Background Glow */}
         <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ background: `radial-gradient(circle at center, ${accent} 0%, transparent 50%)` }}></div>
-        
+
         <p className="text-[10px] md:text-sm font-bold tracking-[0.3em] md:tracking-[0.5em] uppercase mb-4 md:mb-8 z-10" style={{ color: '#6B7280' }}>Time Remaining</p>
-        
+
         {/* TIMER — Largest visual element per brand guidelines */}
         <div
-          className="text-[clamp(4rem,25vw,18rem)] font-black tracking-tighter leading-none font-mono z-10 mb-8 md:mb-16 flex items-center"
+          className="text-[clamp(3.25rem,20vw,18rem)] font-black tracking-tighter leading-none font-mono z-10 mb-6 md:mb-16 flex items-center whitespace-nowrap"
           style={{ color: '#E6E6E6', textShadow: `0 0 80px ${accent}30` }}
         >
           {formatTime(timeLeft.hours)}
@@ -216,42 +216,42 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
           {formatTime(timeLeft.seconds)}
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 md:gap-12 z-10 mb-8 md:mb-12 w-full max-w-5xl">
-          <div className="flex-1 bg-transparent border-l-4 pl-6 md:pl-8" style={{ borderColor: accent }}>
+        <div className="flex flex-col md:flex-row gap-4 md:gap-12 z-10 mb-6 md:mb-12 w-full max-w-5xl">
+          <div className="flex-1 bg-transparent border-l-4 pl-5 md:pl-8" style={{ borderColor: accent }}>
             <p className="text-[9px] md:text-[11px] font-bold tracking-[0.2em] uppercase mb-2 md:mb-3" style={{ color: accent }}>Current Phase</p>
-            <h2 className="text-2xl md:text-4xl font-black mb-2 md:mb-3 tracking-tight" style={{ color: '#E6E6E6' }}>{currentPhase.name}</h2>
+            <h2 className="text-xl sm:text-2xl md:text-4xl font-black mb-2 md:mb-3 tracking-tight wrap-break-word" style={{ color: '#E6E6E6' }}>{currentPhase.name}</h2>
             <p className="text-sm md:text-lg font-medium" style={{ color: '#A0A0A0' }}>{currentPhase.durationMinutes} Minute Sprint</p>
           </div>
           {nextPhase && (
-            <div className="flex-1 rounded-xl p-6 md:p-8" style={{ backgroundColor: 'rgba(28,28,28,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex-1 rounded-xl p-5 md:p-8" style={{ backgroundColor: 'rgba(28,28,28,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <p className="text-[9px] md:text-[11px] font-bold tracking-[0.2em] uppercase mb-2 md:mb-3" style={{ color: '#6B7280' }}>Next Up</p>
-              <h2 className="text-2xl md:text-4xl font-black mb-1 tracking-tight" style={{ color: '#6B7280' }}>{nextPhase.name}</h2>
+              <h2 className="text-xl sm:text-2xl md:text-4xl font-black mb-1 tracking-tight wrap-break-word" style={{ color: '#6B7280' }}>{nextPhase.name}</h2>
             </div>
           )}
         </div>
 
         {/* Room Code — Cyber Lime accent */}
-        <div className="z-10 text-center rounded-[20px] px-8 md:px-16 py-4 md:py-6 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-md" style={{ backgroundColor: 'rgba(28,28,28,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="z-10 w-full max-w-2xl text-center rounded-[20px] px-4 sm:px-8 md:px-16 py-4 md:py-6 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-md" style={{ backgroundColor: 'rgba(28,28,28,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}>
           <p className="text-[9px] md:text-[11px] font-bold tracking-[0.3em] md:tracking-[0.5em] uppercase mb-1 md:mb-2" style={{ color: '#CFFF04' }}>Room Access Code</p>
-          <p className="text-4xl md:text-7xl font-black font-mono tracking-widest" style={{ color: '#E6E6E6' }}>{roomId}</p>
+          <p className="text-[clamp(2.25rem,11vw,4.5rem)] font-black font-mono tracking-[0.18em] md:tracking-widest break-all" style={{ color: '#E6E6E6' }}>{roomId}</p>
         </div>
       </main>
 
-      <footer className="h-16 md:h-20 flex items-stretch shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', backgroundColor: '#0F0F10' }}>
+      <footer className="flex flex-col sm:flex-row sm:items-stretch shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', backgroundColor: '#0F0F10' }}>
         <div
           onClick={() => setShowHistory(true)}
-          className="w-40 md:w-80 flex items-center px-4 md:px-8 gap-3 md:gap-4 cursor-pointer transition-all group"
+          className="w-full sm:w-80 min-h-14 md:min-h-20 flex items-center px-4 md:px-8 gap-3 md:gap-4 cursor-pointer transition-all group"
           style={{ backgroundColor: '#1C1C1C', borderRight: '1px solid rgba(255,255,255,0.04)' }}
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#232323'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1C1C1C'}
         >
-          <Megaphone size={16} className="md:size-[20px] transition-transform group-hover:scale-110" style={{ color: '#FF2E9A' }} />
-          <span className="text-[10px] md:text-sm font-bold tracking-[0.1em] md:tracking-[0.2em] uppercase truncate" style={{ color: '#E6E6E6' }}>{eventData.announcement || "SYSTEM NOMINAL"}</span>
+          <Megaphone size={16} className="md:size-5 transition-transform group-hover:scale-110" style={{ color: '#FF2E9A' }} />
+          <span className="text-[10px] md:text-sm font-bold tracking-widest md:tracking-[0.2em] uppercase truncate" style={{ color: '#E6E6E6' }}>{eventData.announcement || "SYSTEM NOMINAL"}</span>
         </div>
 
-        <div className="flex-1 flex items-center justify-end pr-3 pl-4 md:pr-10 md:pl-8">
+        <div className="flex-1 flex items-center justify-end pr-3 pl-4 py-3 md:pr-10 md:pl-8 md:py-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <div className="flex items-center gap-2.5 md:gap-3.5 px-4 md:px-6 py-2.5 md:py-3 rounded-md" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.04)' }}>
-            <Clock size={15} className="md:size-[18px]" style={{ color: '#FF2E9A' }} />
+            <Clock size={15} className="md:size-4.5" style={{ color: '#FF2E9A' }} />
             <span className="text-sm md:text-base font-mono tracking-[0.22em]" style={{ color: '#E6E6E6' }}>{realTime}</span>
           </div>
         </div>
@@ -260,7 +260,7 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
       {/* Return Home Button - Subtle bottom right */}
       <Link
         href="/dashboard"
-        className="fixed bottom-6 right-6 z-[60] p-4 glass rounded-full opacity-20 hover:opacity-100 transition-all hover:scale-110 group"
+        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-60 p-3 md:p-4 glass rounded-full opacity-20 hover:opacity-100 transition-all hover:scale-110 group"
         title="Return to Hub"
       >
         <Home size={20} className="text-[#A0A0A0] group-hover:text-[#FF2E9A]" />
@@ -269,11 +269,11 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
       {/* Expandable History Overlay */}
       {showHistory && (
         <div
-          className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-end justify-start p-6 md:p-12 animate-in fade-in duration-300"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-end md:items-end justify-start p-3 md:p-12 animate-in fade-in duration-300"
           onClick={() => setShowHistory(false)}
         >
           <div
-            className="w-full max-w-lg overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
+            className="w-full max-w-lg overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-300 max-h-[85dvh]"
             style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -303,19 +303,19 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
       {/* MASSIVE FULL SCREEN OVERLAY */}
       {showAnnouncement && (
         <div
-          className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-md cursor-pointer p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md cursor-pointer p-4 md:p-6"
           style={{ backgroundColor: 'rgba(15,15,16,0.9)' }}
           onClick={() => setShowAnnouncement(false)}
         >
-          <div className="relative max-w-[90%] w-full text-center animate-in fade-in zoom-in duration-300">
+          <div className="relative max-w-[95%] md:max-w-[90%] max-h-[90dvh] overflow-y-auto w-full text-center animate-in fade-in zoom-in duration-300">
             <button
               onClick={(e) => { e.stopPropagation(); setShowAnnouncement(false); }}
               className="absolute top-4 right-4 hover:text-white" style={{ color: '#6B7280' }}
             >
-              <X size={24} className="md:size-[32px]" />
+              <X size={24} className="md:size-8" />
             </button>
-            <Megaphone size={48} className="md:size-[96px] mx-auto mb-8 md:mb-12 animate-pulse" style={{ color: accent }} />
-            <h1 className="text-4xl md:text-7xl lg:text-[140px] font-black tracking-tighter leading-tight md:leading-none drop-shadow-[0_0_50px_rgba(255,255,255,0.2)] break-words" style={{ color: '#E6E6E6' }}>
+            <Megaphone size={48} className="md:size-24 mx-auto mb-8 md:mb-12 animate-pulse" style={{ color: accent }} />
+            <h1 className="text-4xl md:text-7xl lg:text-[140px] font-black tracking-tighter leading-tight md:leading-none drop-shadow-[0_0_50px_rgba(255,255,255,0.2)] wrap-break-word px-8 md:px-0" style={{ color: '#E6E6E6' }}>
               {eventData.announcement}
             </h1>
             <p className="mt-8 md:mt-16 tracking-[0.3em] uppercase text-sm md:text-xl font-bold animate-pulse" style={{ color: '#6B7280' }}>
