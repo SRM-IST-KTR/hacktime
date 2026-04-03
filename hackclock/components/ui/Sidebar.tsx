@@ -185,7 +185,7 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
   // Restrict Nav Items based on Role
   const navItems = [
     ...(!isGuest ? [{ name: 'Dashboard', href: '/dashboard', icon: LayoutGrid }] : []),
-    ...(!isGuest ? [{ name: 'Flow Creation', href: '/flow', icon: Network }] : []),
+    ...(!isGuest ? [{ name: 'Blueprints', href: '/flow', icon: Network }] : []),
     { name: 'Clock View', href: currentRoomId ? `/room/${currentRoomId}/clock` : '/clock', icon: Clock },
     { name: 'Stage Mode', href: currentRoomId ? `/room/${currentRoomId}/stage` : '/stage', icon: Monitor },
   ];
@@ -258,13 +258,13 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
                     }
                     onNavItemClick?.();
                   }}
-                  className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all group`}
+                  className={`flex cursor-pointer items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold tracking-wide transition-all group`}
                   style={isActive
-                    ? { backgroundColor: 'rgba(255,46,154,0.08)', color: '#FF2E9A', boxShadow: 'inset 0 0 20px rgba(255,46,154,0.04)' }
-                    : { color: '#A0A0A0' }
+                    ? { backgroundColor: '#2D1E2F', color: '#FF2E9A' }
+                    : { color: '#94A3B8', backgroundColor: 'transparent' }
                   }
-                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = '#E6E6E6'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; } }}
-                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = '#A0A0A0'; e.currentTarget.style.backgroundColor = 'transparent'; } }}
+                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.color = '#E6E6E6'; e.currentTarget.style.backgroundColor = 'transparent'; } }}
+                  onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.backgroundColor = 'transparent'; } }}
                 >
                   <item.icon size={18} style={{ color: isActive ? '#FF2E9A' : '#6B7280' }} />
                   {item.name}
@@ -284,8 +284,8 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
             description="Join an active hackathon with a room ID. We'll route you straight into the live clock view."
             buttonLabel="Connect Terminal"
             onSuccess={onNavItemClick}
-            className="w-full py-3 rounded-xl font-bold text-[10px] transition-all flex justify-center items-center gap-2 tracking-widest uppercase shadow-lg active:scale-95"
-            style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A0A0' }}
+            className="w-full cursor-pointer py-3 rounded-none border font-bold text-[10px] transition-all flex justify-center items-center gap-2 tracking-widest uppercase shadow-lg active:scale-95"
+            style={{ backgroundColor: 'rgba(255,46,154,0.08)', border: '1px solid #FF2E9A', color: '#FF2E9A' }}
           />
         </div>
       )}

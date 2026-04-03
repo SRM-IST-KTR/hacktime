@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import useSWR from 'swr';
+import { io, Socket } from 'socket.io-client';
 import { Network, Play, Pause, FastForward, Megaphone, Terminal, CheckCircle2, Copy, Square, Trash2, ChevronDown, History, AlertTriangle, RefreshCw, Clock, Monitor, Edit, XCircle } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 
@@ -37,6 +38,8 @@ export default function DashboardPage() {
   const [broadcastHistory, setBroadcastHistory] = useState<string[]>([]);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [liveParticipants, setLiveParticipants] = useState<Participant[] | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   // Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -97,6 +100,38 @@ export default function DashboardPage() {
       return () => clearTimeout(timeout);
     }
   }, []);
+
+  useEffect(() => {
+    if (!activeRoomId) {
+      setLiveParticipants(null);
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      return;
+    }
+
+    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('watch-room', activeRoomId);
+    });
+
+    socket.on('room-users-updated', (payload: { roomId: string; users: Array<{ teamName: string }> }) => {
+      if (payload.roomId !== activeRoomId) return;
+      setLiveParticipants(payload.users.map((user) => ({ teamName: user.teamName })));
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [activeRoomId]);
+
+  useEffect(() => {
+    if (!activeRoomId) return;
+    if (liveParticipants !== null) return;
+    setLiveParticipants(activeControlEvent?.participants || []);
+  }, [activeControlEvent?.participants, activeRoomId, liveParticipants]);
 
   const openConfirmModal = (type: 'DELETE' | 'STOP' | 'NEXT_PHASE', roomId: string, flowName: string) => {
     setConfirmModal({ isOpen: true, type, roomId, flowName });
@@ -185,6 +220,8 @@ export default function DashboardPage() {
   const activeFlows = allFlows?.filter((f) => f.status === 'RUNNING' || f.status === 'PAUSED') || [];
   const drafts = allFlows?.filter((f) => f.status === 'DRAFT') || [];
   const completed = allFlows?.filter((f) => f.status === 'COMPLETED') || [];
+  const isBroadcastDisabled = !announcementInput.trim();
+  const displayedParticipants = liveParticipants ?? activeControlEvent?.participants ?? [];
 
   return (
     <div className="max-w-6xl mx-auto pb-20 space-y-12 stagger-in">
@@ -358,7 +395,7 @@ export default function DashboardPage() {
                   {[
                     { label: 'Status', value: activeControlEvent.status, sub: 'Current State' },
                     { label: 'Phase', value: activeControlEvent.phases?.[activeControlEvent.currentPhaseIndex ?? 0]?.name || "N/A", sub: 'Phase Execution' },
-                    { label: 'Teams', value: activeControlEvent.participants?.length || 0, sub: 'Total Connected' },
+                    { label: 'Teams', value: displayedParticipants.length || 0, sub: 'Total Connected' },
                     { label: 'Node ID', value: activeRoomId, sub: 'Active Room' },
                   ].map((item, i) => (
                     <div key={i} className="p-5 rounded-[20px]" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -380,7 +417,7 @@ export default function DashboardPage() {
                       type="text"
                       value={announcementInput}
                       onChange={(e) => setAnnouncementInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleBroadcast()}
+                      onKeyDown={(e) => e.key === 'Enter' && !isBroadcastDisabled && handleBroadcast()}
                       placeholder="Broadcast message to all terminals..."
                       className="flex-1 rounded-[20px] py-4 px-6 text-sm outline-none transition-all"
                       style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)', color: '#E6E6E6' }}
@@ -398,7 +435,14 @@ export default function DashboardPage() {
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold pointer-events-none uppercase" style={{ color: '#6B7280' }}>Sec</span>
                       </div>
-                      <button onClick={handleBroadcast} className="px-8 py-4 rounded-[20px] font-bold text-[11px] uppercase tracking-widest transition-all shadow-xl active:scale-95" style={{ backgroundColor: '#CFFF04', color: '#0F0F10' }}>Broadcast</button>
+                      <button
+                        onClick={handleBroadcast}
+                        disabled={isBroadcastDisabled}
+                        className={`px-8 py-4 rounded-[20px] font-bold text-[11px] uppercase tracking-widest transition-all shadow-xl active:scale-95 ${isBroadcastDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        style={{ backgroundColor: '#CFFF04', color: '#0F0F10' }}
+                      >
+                        Broadcast
+                      </button>
                     </div>
                   </div>
 
@@ -434,13 +478,13 @@ export default function DashboardPage() {
                   <RefreshCw size={12} className="cursor-pointer transition-colors" style={{ color: '#6B7280' }} onClick={() => mutateActive()} />
                 </div>
                 <div className="rounded-[20px] p-6 h-[280px] overflow-y-auto space-y-3 custom-scrollbar" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  {activeControlEvent.participants?.map((p: Participant, i: number) => (
+                  {displayedParticipants.map((p: Participant, i: number) => (
                     <div key={i} className="flex items-center gap-3 py-2 last:border-0 group" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#10B981', boxShadow: '0 0 8px rgba(16,185,129,0.4)' }}></div>
                       <span className="text-sm font-medium truncate group-hover:text-white transition-colors" style={{ color: '#A0A0A0' }}>{p.teamName}</span>
                     </div>
                   ))}
-                  {(!activeControlEvent.participants || activeControlEvent.participants.length === 0) && (
+                  {displayedParticipants.length === 0 && (
                     <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
                       <Monitor size={32} className="mb-2" style={{ color: '#6B7280' }} />
                       <p className="text-[11px] font-medium" style={{ color: '#6B7280' }}>Listening for nodes...</p>
