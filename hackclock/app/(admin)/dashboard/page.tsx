@@ -18,6 +18,7 @@ interface HackathonFlow {
   phases?: Array<{ name: string; durationMinutes: number }>;
   branding?: { accentColor?: string; logoUrl?: string };
   participants?: Array<{ teamName: string }>;
+  announcementHistory?: Array<{ text: string; duration?: number; timestamp: string }>;
   updatedAt: string;
   error?: string;
 }
@@ -35,7 +36,6 @@ export default function DashboardPage() {
   const [announcementInput, setAnnouncementInput] = useState("");
   const [announcementDuration, setAnnouncementDuration] = useState(10);
   const [showHistory, setShowHistory] = useState(false);
-  const [broadcastHistory, setBroadcastHistory] = useState<string[]>([]);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [liveParticipants, setLiveParticipants] = useState<Participant[] | null>(null);
@@ -91,16 +91,6 @@ export default function DashboardPage() {
 
     lastClearedRoomRef.current = null;
   }, [activeRoomId, activeEvent, update]);
-
-  useEffect(() => {
-    const history = localStorage.getItem('broadcast_history');
-    if (history) {
-      const timeout = setTimeout(() => {
-        setBroadcastHistory(JSON.parse(history));
-      }, 0);
-      return () => clearTimeout(timeout);
-    }
-  }, []);
 
   useEffect(() => {
     if (!activeRoomId) {
@@ -200,10 +190,6 @@ export default function DashboardPage() {
         })
       });
 
-      const newHistory = [announcementInput, ...broadcastHistory.slice(0, 9)];
-      setBroadcastHistory(newHistory);
-      localStorage.setItem('broadcast_history', JSON.stringify(newHistory));
-
       setAnnouncementInput("");
       mutateActive();
     } catch { alert("System Error: Could not connect to Master Node."); }
@@ -230,6 +216,7 @@ export default function DashboardPage() {
   const completed = allFlows?.filter((f) => f.status === 'COMPLETED') || [];
   const isBroadcastDisabled = !announcementInput.trim();
   const displayedParticipants = liveParticipants ?? activeControlEvent?.participants ?? [];
+  const broadcastHistory = activeControlEvent?.announcementHistory ?? [];
 
   return (
     <div className="max-w-6xl mx-auto pb-20 space-y-12 stagger-in">
@@ -481,8 +468,13 @@ export default function DashboardPage() {
                         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
                           {broadcastHistory.map((h, i) => (
                             <div key={i} className="text-[10px] p-3 rounded-xl flex justify-between items-center group" style={{ color: '#A0A0A0', backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                              <span className="truncate pr-4">{h}</span>
-                              <button onClick={() => setAnnouncementInput(h)} className="opacity-0 group-hover:opacity-100 uppercase font-bold text-[9px] shrink-0" style={{ color: '#FF2E9A' }}>Reuse</button>
+                              <div className="min-w-0 pr-4">
+                                <p className="truncate">{h.text}</p>
+                                <p className="mt-1 text-[9px] uppercase tracking-wider" style={{ color: '#6B7280' }}>
+                                  {new Date(h.timestamp).toLocaleString()}
+                                </p>
+                              </div>
+                              <button onClick={() => setAnnouncementInput(h.text)} className="opacity-0 group-hover:opacity-100 uppercase font-bold text-[9px] shrink-0" style={{ color: '#FF2E9A' }}>Reuse</button>
                             </div>
                           ))}
                         </div>

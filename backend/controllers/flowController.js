@@ -31,6 +31,36 @@ const getCurrentPhaseDurationMs = (room) => {
   return minutes > 0 ? minutes * 60000 : 0;
 };
 
+const getUpdatedPhaseTiming = ({ status, previousDurationMs, nextDurationMs, phaseEndTime, pausedRemainingMs }) => {
+  if (previousDurationMs <= 0 || nextDurationMs <= 0) {
+    return {};
+  }
+
+  if (status === 'RUNNING') {
+    const currentRemainingMs = phaseEndTime ? Math.max(phaseEndTime.getTime() - Date.now(), 0) : previousDurationMs;
+    const elapsedMs = Math.max(previousDurationMs - currentRemainingMs, 0);
+    const nextRemainingMs = Math.max(nextDurationMs - elapsedMs, 0);
+
+    return {
+      phaseEndTime: new Date(Date.now() + nextRemainingMs),
+      pausedRemainingMs: null
+    };
+  }
+
+  if (status === 'PAUSED') {
+    const currentRemainingMs = pausedRemainingMs > 0 ? pausedRemainingMs : previousDurationMs;
+    const elapsedMs = Math.max(previousDurationMs - currentRemainingMs, 0);
+    const nextRemainingMs = Math.max(nextDurationMs - elapsedMs, 0);
+
+    return {
+      pausedRemainingMs: nextRemainingMs,
+      phaseEndTime: null
+    };
+  }
+
+  return {};
+};
+
 const deployFlow = async (req, res) => {
   try {
     const { name, organizerSecret, eventStartTime, eventEndTime, timezone, branding, phases, status } = req.body;
@@ -116,17 +146,21 @@ const updateFlow = async (req, res) => {
       phases: phases || flow.phases
     };
 
-    // If the active phase duration is edited, refresh the active timer baseline.
+    // Preserve current progress when the active phase duration changes.
     if (phases && Array.isArray(phases) && phases[flow.currentPhaseIndex]) {
+      const previousCurrentPhase = flow.phases?.[flow.currentPhaseIndex];
       const updatedCurrentPhase = phases[flow.currentPhaseIndex];
+      const previousDurationMs = (previousCurrentPhase?.durationMinutes || 0) * 60000;
       const nextDurationMs = (updatedCurrentPhase.durationMinutes || 0) * 60000;
 
-      if (nextDurationMs > 0 && flow.status === 'RUNNING') {
-        updatePayload.phaseEndTime = new Date(Date.now() + nextDurationMs);
-      }
-
-      if (nextDurationMs > 0 && flow.status === 'PAUSED') {
-        updatePayload.pausedRemainingMs = nextDurationMs;
+      if (nextDurationMs !== previousDurationMs) {
+        Object.assign(updatePayload, getUpdatedPhaseTiming({
+          status: flow.status,
+          previousDurationMs,
+          nextDurationMs,
+          phaseEndTime: flow.phaseEndTime,
+          pausedRemainingMs: flow.pausedRemainingMs
+        }));
       }
     }
 
@@ -211,9 +245,20 @@ const updateRoomState = async (req, res) => {
     }
     // NEW: Handle Broadcast Overrides
     else if (action === 'ANNOUNCE') {
-      room.announcement = announcementText || "";
-      room.announcementDuration = announcementDuration || 10;
+      const message = (announcementText || "").trim();
+      const duration = announcementDuration || 10;
+
+      room.announcement = message;
+      room.announcementDuration = duration;
       room.announcementTimestamp = new Date(); // Logs the exact moment of broadcast
+
+      if (message) {
+        room.announcementHistory.unshift({
+          text: message,
+          duration,
+          timestamp: room.announcementTimestamp
+        });
+      }
     }
     else if (action === 'RECALCULATE') {
       const fallbackDurationMs = getCurrentPhaseDurationMs(room);

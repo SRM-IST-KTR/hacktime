@@ -6,6 +6,12 @@ const PhaseSchema = new mongoose.Schema({
   autoTransition: { type: Boolean, default: false }
 });
 
+const AnnouncementEntrySchema = new mongoose.Schema({
+  text: { type: String, required: true },
+  duration: { type: Number, default: 10 },
+  timestamp: { type: Date, default: Date.now }
+}, { _id: false });
+
 const HackathonSchema = new mongoose.Schema({
   name: { type: String, required: true },
   roomId: { type: String, required: true, unique: true, index: true },
@@ -31,6 +37,7 @@ const HackathonSchema = new mongoose.Schema({
   announcement: { type: String, default: "" },
   announcementDuration: { type: Number, default: 10 },
   announcementTimestamp: { type: Date, default: null },
+  announcementHistory: { type: [AnnouncementEntrySchema], default: [] },
 
   phases: [PhaseSchema],
   branding: {

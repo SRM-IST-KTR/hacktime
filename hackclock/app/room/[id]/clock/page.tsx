@@ -14,6 +14,12 @@ interface Phase {
   durationMinutes: number;
 }
 
+interface AnnouncementHistoryEntry {
+  text: string;
+  duration?: number;
+  timestamp: string;
+}
+
 export default function ClockView({ params }: { params: Promise<{ id: string }> }) {
   const [roomId, setRoomId] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -24,7 +30,6 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
   const [lastAnnouncementTime, setLastAnnouncementTime] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
-  const [history, setHistory] = useState<string[]>([]);
   const announcementDurationRef = useRef(10);
   const presenceSocketRef = useRef<Socket | null>(null);
 
@@ -68,23 +73,6 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
     }
   );
 
-  // Load history and last seen TS from local storage
-  useEffect(() => {
-    if (roomId) {
-      const localHistory = localStorage.getItem(`clock_history_${roomId}`);
-      const lastTS = localStorage.getItem(`last_broadcast_${roomId}`);
-      const timeout = setTimeout(() => {
-        if (localHistory) {
-          setHistory(JSON.parse(localHistory));
-        }
-        if (lastTS) {
-          setLastAnnouncementTime(lastTS);
-        }
-      }, 0);
-      return () => clearTimeout(timeout);
-    }
-  }, [roomId]);
-
   // Broadcast logic
   useEffect(() => {
     if (!eventData || !roomId) return;
@@ -92,10 +80,10 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
     const currentTS = eventData.announcementTimestamp;
 
     if (isInitialLoad) {
-      if (!lastAnnouncementTime && currentTS) {
+      if (currentTS) {
         const timeout = setTimeout(() => {
           setLastAnnouncementTime(currentTS);
-          localStorage.setItem(`last_broadcast_${roomId}`, currentTS);
+          setIsInitialLoad(false);
         }, 0);
         return () => clearTimeout(timeout);
       }
@@ -108,25 +96,15 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
     if (currentTS && currentTS !== lastAnnouncementTime) {
       const timestampTimeout = setTimeout(() => {
         setLastAnnouncementTime(currentTS);
-        localStorage.setItem(`last_broadcast_${roomId}`, currentTS);
       }, 0);
 
       if (eventData.announcement) {
-        const historyTimeout = setTimeout(() => {
-          setHistory(prev => {
-            const newHistory = [eventData.announcement, ...prev.filter(h => h !== eventData.announcement)].slice(0, 10);
-            localStorage.setItem(`clock_history_${roomId}`, JSON.stringify(newHistory));
-            return newHistory;
-          });
-        }, 0);
-
         announcementDurationRef.current = eventData.announcementDuration || 10;
         const announcementTimeout = setTimeout(() => {
           setShowAnnouncement(true);
         }, 0);
         return () => {
           clearTimeout(timestampTimeout);
-          clearTimeout(historyTimeout);
           clearTimeout(announcementTimeout);
         };
       }
@@ -223,6 +201,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
 
   const currentPhase = eventData.phases[eventData.currentPhaseIndex] || {};
   const accent = eventData.branding?.accentColor || '#FF2E9A'; // it was ff2e9a
+  const broadcastHistory: AnnouncementHistoryEntry[] = eventData.announcementHistory || [];
 
   return (
     <div className="flex flex-col lg:flex-row h-screen overflow-hidden relative" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
@@ -392,15 +371,18 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
               </button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto p-6 space-y-4 custom-scrollbar">
-              {history.length === 0 ? (
+              {broadcastHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 opacity-30 text-center">
                   <Megaphone size={48} className="mb-4" />
                   <p className="text-sm font-bold uppercase tracking-widest">No transmissions captured.</p>
                 </div>
               ) : (
-                history.map((item, i) => (
+                broadcastHistory.map((item, i) => (
                   <div key={i} className="p-5 rounded-[20px] group transition-all" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <p className="font-medium leading-relaxed" style={{ color: '#E6E6E6' }}>{item}</p>
+                    <p className="font-medium leading-relaxed" style={{ color: '#E6E6E6' }}>{item.text}</p>
+                    <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: '#6B7280' }}>
+                      {new Date(item.timestamp).toLocaleString()}
+                    </p>
                   </div>
                 ))
               )}
