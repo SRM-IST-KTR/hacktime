@@ -3,12 +3,17 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 const routes = require('./routes/index');
 const connectDB = require('./lib/connectDB');
 
 const app = express();
 const httpServer = http.createServer(app);
 const roomUsers = new Map();
+
+app.use(helmet());
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Increase payload limit to 50mb to allow Base64 Image uploads
 app.use(express.json({ limit: '50mb' }));
@@ -95,10 +100,10 @@ io.on('connection', (socket) => {
 
 // Health check
 app.get('/', (req, res) => {
-  res.status(200).json({ 
-    status: "Active", 
+  res.status(200).json({
+    status: "Active",
     engine: "HackClock Core",
-    message: "Master Backend is operational. Use /api routes for data." 
+    message: "Master Backend is operational. Use /api routes for data."
   });
 });
 
