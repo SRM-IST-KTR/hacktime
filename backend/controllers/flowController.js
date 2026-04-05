@@ -245,9 +245,20 @@ const updateRoomState = async (req, res) => {
     }
     // NEW: Handle Broadcast Overrides
     else if (action === 'ANNOUNCE') {
-      room.announcement = announcementText || "";
-      room.announcementDuration = announcementDuration || 10;
+      const message = (announcementText || "").trim();
+      const duration = announcementDuration || 10;
+
+      room.announcement = message;
+      room.announcementDuration = duration;
       room.announcementTimestamp = new Date(); // Logs the exact moment of broadcast
+
+      if (message) {
+        room.announcementHistory.unshift({
+          text: message,
+          duration,
+          timestamp: room.announcementTimestamp
+        });
+      }
     }
     else if (action === 'RECALCULATE') {
       const fallbackDurationMs = getCurrentPhaseDurationMs(room);

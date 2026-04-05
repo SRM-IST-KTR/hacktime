@@ -4,9 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
-import { Terminal, Megaphone, Clock, X, History, Home } from 'lucide-react';
+import { Megaphone, Clock, X, History, Home, Terminal } from 'lucide-react';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+interface AnnouncementHistoryEntry {
+  text: string;
+  duration?: number;
+  timestamp: string;
+}
 
 export default function StageMode({ params }: { params: Promise<{ id: string }> }) {
   const [roomId, setRoomId] = useState<string>("");
@@ -18,7 +24,6 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const [showHistory, setShowHistory] = useState(false);
-  const [history, setHistory] = useState<string[]>([]);
   const announcementDurationRef = useRef(10);
   const presenceSocketRef = useRef<Socket | null>(null);
 
@@ -53,18 +58,6 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
     };
   }, [roomId]);
 
-  useEffect(() => {
-    if (roomId) {
-      const localHistory = localStorage.getItem(`stage_history_${roomId}`);
-      if (localHistory) {
-        const timeout = setTimeout(() => {
-          setHistory(JSON.parse(localHistory));
-        }, 0);
-        return () => clearTimeout(timeout);
-      }
-    }
-  }, [roomId]);
-
   const { data: eventData } = useSWR(
     roomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}` : null,
     fetcher,
@@ -85,9 +78,10 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
 
     // On initial load, record the current timestamp without triggering overlay
     if (isInitialLoad) {
-      if (!lastAnnouncementTime && currentTS) {
+      if (currentTS) {
         const timeout = setTimeout(() => {
           setLastAnnouncementTime(currentTS);
+          setIsInitialLoad(false);
         }, 0);
         return () => clearTimeout(timeout);
       }
@@ -104,21 +98,11 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
       }, 0);
 
       if (eventData.announcement) {
-        // Add to history
-        const historyTimeout = setTimeout(() => {
-          setHistory(prev => {
-            const newHistory = [eventData.announcement, ...prev.filter(h => h !== eventData.announcement)].slice(0, 10);
-            localStorage.setItem(`stage_history_${roomId}`, JSON.stringify(newHistory));
-            return newHistory;
-          });
-        }, 0);
-
         announcementDurationRef.current = eventData.announcementDuration || 10;
         const announcementTimeout = setTimeout(() => setShowAnnouncement(true), 0);
 
         return () => {
           clearTimeout(timestampTimeout);
-          clearTimeout(historyTimeout);
           clearTimeout(announcementTimeout);
         };
       }
@@ -207,6 +191,7 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   const currentPhase = eventData.phases[eventData.currentPhaseIndex] || {};
   const nextPhase = eventData.phases[eventData.currentPhaseIndex + 1] || null;
   const accent = eventData.branding?.accentColor || '#FF2E9A';
+  const broadcastHistory: AnnouncementHistoryEntry[] = eventData.announcementHistory || [];
 
   return (
     <div className="min-h-dvh w-full flex flex-col overflow-x-hidden font-sans relative" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
@@ -218,9 +203,7 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
                 <img src={eventData.branding.logoUrl} alt="Logo" className="h-6 md:h-8 object-contain" />
               </div>
             ) : (
-              <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-colors" style={{ background: 'linear-gradient(135deg, #5D00FF, #FF2E9A)', boxShadow: `0 0 20px ${accent}30` }}>
-                <Terminal size={24} className="md:size-8" style={{ color: '#0F0F10' }} strokeWidth={2.5} />
-              </div>
+              <img src="/logo.svg" alt="hackTime Logo" className="h-8 md:h-12 object-contain" />
             )}
           </Link>
           <div className="min-w-0">
@@ -328,12 +311,15 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
               </button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto p-4 space-y-3 custom-scrollbar">
-              {history.length === 0 ? (
+              {broadcastHistory.length === 0 ? (
                 <p className="text-xs italic text-center py-12" style={{ color: '#6B7280' }}>No previous broadcasts captured.</p>
               ) : (
-                history.map((item, i) => (
+                broadcastHistory.map((item, i) => (
                   <div key={i} className="p-4 rounded-xl animate-in fade-in slide-in-from-left-2" style={{ backgroundColor: '#0F0F10', border: '1px solid rgba(255,255,255,0.04)', animationDelay: `${i * 50}ms` }}>
-                    <p className="text-sm font-medium leading-relaxed" style={{ color: '#E6E6E6' }}>{item}</p>
+                    <p className="text-sm font-medium leading-relaxed" style={{ color: '#E6E6E6' }}>{item.text}</p>
+                    <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: '#6B7280' }}>
+                      {new Date(item.timestamp).toLocaleString()}
+                    </p>
                   </div>
                 ))
               )}
